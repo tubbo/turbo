@@ -28,19 +28,20 @@ pub fn create_node_api_source(
     render_data: Vc<JsonValue>,
     debug: bool,
 ) -> Vc<Box<dyn ContentSource>> {
-    NodeApiContentSource {
-        cwd,
-        env,
-        specificity,
-        server_root,
-        pathname,
-        route_match,
-        entry,
-        render_data,
-        debug,
-    }
-    .cell()
-    .into()
+    Vc::upcast(
+        NodeApiContentSource {
+            cwd,
+            env,
+            specificity,
+            server_root,
+            pathname,
+            route_match,
+            entry,
+            render_data,
+            debug,
+        }
+        .cell(),
+    )
 }
 
 /// A content source that proxies API requests to one-off Node.js
@@ -79,17 +80,18 @@ impl ContentSource for NodeApiContentSource {
         _data: turbo_tasks::Value<ContentSourceData>,
     ) -> Result<Vc<ContentSourceResult>> {
         let this = self.await?;
-        if *this.route_match.matches(path).await? {
+        if *this.route_match.matches(path.clone()).await? {
             return Ok(ContentSourceResult::Result {
                 specificity: this.specificity,
-                get_content: NodeApiGetContentResult {
-                    source: self,
-                    render_data: this.render_data,
-                    path: path.to_string(),
-                    debug: this.debug,
-                }
-                .cell()
-                .into(),
+                get_content: Vc::upcast(
+                    NodeApiGetContentResult {
+                        source: self,
+                        render_data: this.render_data,
+                        path: path.to_string(),
+                        debug: this.debug,
+                    }
+                    .cell(),
+                ),
             }
             .cell());
         }
@@ -125,7 +127,7 @@ impl GetContentSourceContent for NodeApiGetContentResult {
     #[turbo_tasks::function]
     async fn get(&self, data: Value<ContentSourceData>) -> Result<Vc<ContentSourceContent>> {
         let source = self.source.await?;
-        let Some(params) = &*source.route_match.params(&self.path).await? else {
+        let Some(params) = &*source.route_match.params(self.path.clone()).await? else {
             return Err(anyhow!("Non matching path provided"));
         };
         let ContentSourceData {
@@ -143,7 +145,7 @@ impl GetContentSourceContent for NodeApiGetContentResult {
         Ok(ContentSourceContent::HttpProxy(render_proxy(
             source.cwd,
             source.env,
-            source.server_root.join(&self.path),
+            source.server_root.join(self.path.clone()),
             entry.module,
             entry.runtime_entries,
             entry.chunking_context,
@@ -200,7 +202,7 @@ impl Introspectable for NodeApiContentSource {
             let entry = entry.await?;
             set.insert((
                 Vc::cell("module".to_string()),
-                IntrospectableAsset::new(entry.module.into()),
+                IntrospectableAsset::new(Vc::upcast(entry.module)),
             ));
             set.insert((
                 Vc::cell("intermediate asset".to_string()),

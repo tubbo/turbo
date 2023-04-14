@@ -53,7 +53,7 @@ impl ChunkGroupFilesAsset {
                     ecma.as_root_chunk(this.chunking_context),
                     this.runtime_entries
                         .unwrap_or_else(EvaluatableAssets::empty)
-                        .with_entry(ecma.into()),
+                        .with_entry(Vc::upcast(ecma)),
                 )
             } else {
                 this.chunking_context
@@ -92,7 +92,7 @@ impl Asset for ChunkGroupFilesAsset {
                 .map(|chunk| {
                     SingleAssetReference::new(chunk, chunk_group_chunk_reference_description())
                 })
-                .map(Into::into)
+                .map(Vc::upcast)
                 .collect(),
         ))
     }
@@ -122,19 +122,20 @@ impl EcmascriptChunkPlaceable for ChunkGroupFilesAsset {
         context: Vc<Box<dyn EcmascriptChunkingContext>>,
     ) -> Result<Vc<Box<dyn EcmascriptChunkItem>>> {
         let this = self.await?;
-        Ok(ChunkGroupFilesChunkItem {
-            context,
-            client_root: this.client_root,
-            inner: self,
-            chunk: this.asset.as_chunk(
-                context.into(),
-                Value::new(AvailabilityInfo::Root {
-                    current_availability_root: this.asset.into(),
-                }),
-            ),
-        }
-        .cell()
-        .into())
+        Ok(Vc::upcast(
+            ChunkGroupFilesChunkItem {
+                context,
+                client_root: this.client_root,
+                inner: self,
+                chunk: this.asset.as_chunk(
+                    Vc::upcast(context),
+                    Value::new(AvailabilityInfo::Root {
+                        current_availability_root: Vc::upcast(this.asset),
+                    }),
+                ),
+            }
+            .cell(),
+        ))
     }
 
     #[turbo_tasks::function]
@@ -223,7 +224,7 @@ impl Introspectable for ChunkGroupFilesAsset {
         }
         children.insert((
             Vc::cell("inner asset".to_string()),
-            IntrospectableAsset::new(self.await?.asset.into()),
+            IntrospectableAsset::new(Vc::upcast(self.await?.asset)),
         ));
         Ok(Vc::cell(children))
     }

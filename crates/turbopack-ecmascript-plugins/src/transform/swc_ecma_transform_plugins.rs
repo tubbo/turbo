@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use swc_core::ecma::ast::Program;
 use turbo_tasks::Vc;
 use turbo_tasks_fs::FileSystemPath;
-use turbopack_core::issue::{Issue, IssueSeverity};
+use turbopack_core::issue::{Issue, IssueExt, IssueSeverity};
 use turbopack_ecmascript::{CustomTransformer, TransformContext};
 
 /// A wrapper around an SWC's ecma transform wasm plugin module bytes, allowing
@@ -223,12 +223,11 @@ impl CustomTransformer for SwcEcmaTransformPluginsTransformer {
 
         #[cfg(not(feature = "swc_ecma_transform_plugin"))]
         {
-            let issue: Vc<UnsupportedSwcEcmaTransformPluginsIssue> =
-                UnsupportedSwcEcmaTransformPluginsIssue {
-                    context: ctx.file_path,
-                }
-                .into();
-            issue.emit();
+            UnsupportedSwcEcmaTransformPluginsIssue {
+                context: ctx.file_path,
+            }
+            .cell()
+            .emit();
         }
 
         Ok(())

@@ -70,7 +70,7 @@ async fn get(
     }
 
     let (source, path) = found.unwrap_or((fallback, path));
-    Ok(source.resolve().await?.get(path, data))
+    Ok(source.resolve().await?.get(path.to_string(), data))
 }
 
 fn get_children(
@@ -116,7 +116,7 @@ impl ContentSource for RouterContentSource {
         path: String,
         data: Value<ContentSourceData>,
     ) -> Result<Vc<ContentSourceResult>> {
-        get(&self.routes, &self.fallback, "", path, data).await
+        get(&self.routes, &self.fallback, "", &path, data).await
     }
 
     #[turbo_tasks::function]
@@ -147,7 +147,7 @@ impl ContentSource for PrefixedRouterContentSource {
         data: Value<ContentSourceData>,
     ) -> Result<Vc<ContentSourceResult>> {
         let prefix = self.prefix.await?;
-        get(&self.routes, &self.fallback, &prefix, path, data).await
+        get(&self.routes, &self.fallback, &prefix, &path, data).await
     }
 
     #[turbo_tasks::function]
