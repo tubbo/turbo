@@ -19,25 +19,17 @@ runs:
   steps:
     - name: Setup pnpm
       uses: pnpm/action-setup@v2.2.4
-      with:
-        version: 7.12.1
 
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: 16
+        node-version: 18
         cache: pnpm
 
     - name: Configure corepack
       if: ${{ inputs.enable-corepack == 'true' }}
       shell: bash
-      # Forcibly upgrade our available version of corepack.
-      # The bundled version in node 16 has known issues.
-      # Prepends the npm bin dir so that it is always first.
-      run: |
-        npm install --force --global corepack@latest
-        npm config get prefix >> $GITHUB_PATH
-        corepack enable
+      run: corepack enable
 
     - name: pnpm install
       id: install

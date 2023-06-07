@@ -383,8 +383,6 @@ jobs:
       # work out of box. We should take another stab at it later.
       - name: Setup Pnpm
         uses: pnpm/action-setup@v2.2.4
-        with:
-          version: 7.2.1
 
       - name: Make sure pnpm always has a cache
         shell: bash
@@ -398,7 +396,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: ${{ matrix.manager }}
           cache-dependency-path: package.json
 
@@ -851,7 +849,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
-          node-version: 16
+          node-version: 18
 
       - name: Build benchmarks for tests
         timeout-minutes: 120
@@ -917,7 +915,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
-          node-version: 16
+          node-version: 18
 
       - name: Build benchmarks for tests
         timeout-minutes: 120
