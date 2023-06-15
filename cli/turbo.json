@@ -3,6 +3,8 @@
   "extends": ["//"],
   "pipeline": {
     "build": {
+      // RUNNER_OS is set by Github Actions
+      // https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
       "env": ["GO_TAG", "RUNNER_OS"],
       "outputs": [
         "../target/debug/go-turbo",
