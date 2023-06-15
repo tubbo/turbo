@@ -193,10 +193,11 @@
       "dependsOn": ["^topo"]
     },
 
-    // example-tesst is in the root turbo.json so we don't have to redefine in each workspace
+    // example-test is in the root turbo.json so we don't have to redefine in each workspace
     // Since they also has a unique set of dependencies, we don't model example tests with the
-    // test task, or we'd have to override the dependenies in each workspace.
+    // test task, or we'd have to override the dependencies in each workspace.
     "example-test": {
+      "env": ["RUNNER_OS"],
       "dependsOn": ["topo", "@turborepo-examples-tests/helpers#setup"],
       "inputs": ["*.t", "../setup.sh"]
     }
