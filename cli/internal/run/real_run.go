@@ -308,6 +308,8 @@ func (ec *execContext) exec(ctx gocontext.Context, packageTask *nodes.PackageTas
 	var prettyPrefix string
 	if ec.rs.Opts.runOpts.LogPrefix == "none" {
 		prefix = ""
+	} else if ec.rs.Opts.runOpts.LogPrefix == "github" {
+		prefix = fmt.Sprintf("::group::%s", packageTask.OutputPrefix(ec.isSinglePackage))
 	} else {
 		prefix = packageTask.OutputPrefix(ec.isSinglePackage)
 	}
@@ -413,6 +415,9 @@ func (ec *execContext) exec(ctx gocontext.Context, packageTask *nodes.PackageTas
 
 	closeOutputs := func() error {
 		var closeErrors []error
+		if ec.rs.Opts.runOpts.LogPrefix == "github" {
+			ec.logger.Info("::endgroup::")
+		}
 
 		if err := logStreamerOut.Close(); err != nil {
 			closeErrors = append(closeErrors, errors.Wrap(err, "log stdout"))
