@@ -547,6 +547,8 @@ pub enum LogPrefix {
     Auto,
     #[serde(rename = "none")]
     None,
+    #[serde(rename = "github")]
+    Github,
     #[serde(rename = "task")]
     Task,
 }
