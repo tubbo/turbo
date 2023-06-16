@@ -129,7 +129,7 @@ func optsFromArgs(args *turbostate.ParsedArgsFromRust) (*Opts, error) {
 }
 
 func configureRun(base *cmdutil.CmdBase, opts *Opts, signalWatcher *signals.Watcher) *run {
-	if opts.runOpts.LogPrefix == "auto" {
+	if opts.runOpts.LogPrefix == "auto" && opts.runOpts.LogOrder == "auto" {
 		if name := ci.Constant(); name == "GITHUB_ACTIONS" {
 			opts.runOpts.LogOrder = "grouped"
 			opts.runOpts.LogPrefix = "github"
