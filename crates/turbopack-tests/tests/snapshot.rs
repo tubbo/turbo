@@ -10,50 +10,46 @@ use anyhow::{anyhow, Context, Result};
 use dunce::canonicalize;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
-use turbo_tasks::{debug::ValueDebug, NothingVc, TryJoinIterExt, TurboTasks, Value, ValueToString};
-use turbo_tasks_env::DotenvProcessEnvVc;
+use turbo_tasks::{
+    debug::ValueDebug, Nothing, ReadRef, TryJoinIterExt, TurboTasks, Value, ValueToString, Vc,
+};
+use turbo_tasks_env::DotenvProcessEnv;
 use turbo_tasks_fs::{
-    json::parse_json_with_source_context, util::sys_to_unix, DiskFileSystemVc, FileSystem,
-    FileSystemPathReadRef, FileSystemPathVc,
+    json::parse_json_with_source_context, util::sys_to_unix, DiskFileSystem, FileSystem,
+    FileSystemPath,
 };
 use turbo_tasks_memory::MemoryBackend;
 use turbopack::{
     condition::ContextCondition,
-    ecmascript::{EcmascriptModuleAssetVc, TransformPluginVc},
-    module_options::{
-        CustomEcmascriptTransformPlugins, CustomEcmascriptTransformPluginsVc, JsxTransformOptions,
-        JsxTransformOptionsVc, ModuleOptionsContext,
-    },
+    ecmascript::{EcmascriptModuleAsset, TransformPlugin},
+    module_options::{CustomEcmascriptTransformPlugins, JsxTransformOptions, ModuleOptionsContext},
     resolve_options_context::ResolveOptionsContext,
-    transition::TransitionsByNameVc,
-    ModuleAssetContextVc,
+    transition::TransitionsByName,
+    ModuleAssetContext,
 };
-use turbopack_build::BuildChunkingContextVc;
+use turbopack_build::BuildChunkingContext;
 use turbopack_core::{
-    asset::{Asset, AssetVc},
-    chunk::{
-        ChunkableAsset, ChunkableAssetVc, ChunkingContext, ChunkingContextVc, EvaluatableAssetVc,
-        EvaluatableAssetsVc,
-    },
+    asset::Asset,
+    chunk::{ChunkableAsset, ChunkingContext, EvaluatableAsset, EvaluatableAssets},
     compile_time_defines,
     compile_time_info::CompileTimeInfo,
-    context::{AssetContext, AssetContextVc},
+    context::AssetContext,
     environment::{
-        BrowserEnvironment, EnvironmentIntention, EnvironmentVc, ExecutionEnvironment,
+        BrowserEnvironment, Environment, EnvironmentIntention, ExecutionEnvironment,
         NodeJsEnvironment,
     },
-    issue::IssueVc,
+    issue::Issue,
     reference::all_referenced_assets,
     reference_type::{EntryReferenceSubType, ReferenceType},
-    source_asset::SourceAssetVc,
+    source_asset::SourceAsset,
 };
-use turbopack_dev::DevChunkingContextVc;
+use turbopack_dev::DevChunkingContext;
 use turbopack_ecmascript_plugins::transform::{
     emotion::{EmotionTransformConfig, EmotionTransformer},
     styled_components::{StyledComponentsTransformConfig, StyledComponentsTransformer},
 };
 use turbopack_ecmascript_runtime::RuntimeType;
-use turbopack_env::ProcessEnvAssetVc;
+use turbopack_env::ProcessEnvAsset;
 use turbopack_test_utils::snapshot::{diff, expected, matches_expected, snapshot_issues};
 
 fn register() {
@@ -156,7 +152,7 @@ async fn run(resource: PathBuf) -> Result<()> {
     let tt = TurboTasks::new(MemoryBackend::default());
     let task = tt.spawn_once_task(async move {
         let out = run_test(resource.to_str().unwrap());
-        let captured_issues = IssueVc::peek_issues_with_path(out)
+        let captured_issues = Issue::peek_issues_with_path(out)
             .await?
             .strongly_consistent()
             .await?;
@@ -179,7 +175,7 @@ async fn run(resource: PathBuf) -> Result<()> {
         )
         .await
         .context("Unable to handle issues")?;
-        Ok(NothingVc::new().into())
+        Ok(Nothing::new().into())
     });
     tt.wait_task_completion(task, true).await?;
 
@@ -187,7 +183,7 @@ async fn run(resource: PathBuf) -> Result<()> {
 }
 
 #[turbo_tasks::function]
-async fn run_test(resource: &str) -> Result<FileSystemPathVc> {
+async fn run_test(resource: String) -> Result<Vc<FileSystemPath>> {
     let test_path = Path::new(resource);
     assert!(test_path.exists(), "{} does not exist", resource);
     assert!(
@@ -201,8 +197,8 @@ async fn run_test(resource: &str) -> Result<FileSystemPathVc> {
         Err(_) => SnapshotOptions::default(),
         Ok(options_str) => parse_json_with_source_context(&options_str).unwrap(),
     };
-    let root_fs = DiskFileSystemVc::new("workspace".to_string(), WORKSPACE_ROOT.clone());
-    let project_fs = DiskFileSystemVc::new("project".to_string(), WORKSPACE_ROOT.clone());
+    let root_fs = DiskFileSystem::new("workspace".to_string(), WORKSPACE_ROOT.clone());
+    let project_fs = DiskFileSystem::new("project".to_string(), WORKSPACE_ROOT.clone());
     let project_root = project_fs.root();
 
     let relative_path = test_path.strip_prefix(&*WORKSPACE_ROOT)?;
@@ -213,7 +209,7 @@ async fn run_test(resource: &str) -> Result<FileSystemPathVc> {
     let entry_asset = project_path.join(&options.entry);
     let entry_paths = vec![entry_asset];
 
-    let env = EnvironmentVc::new(
+    let env = Environment::new(
         Value::new(match options.environment {
             Environment::Browser => {
                 ExecutionEnvironment::Browser(
@@ -248,28 +244,28 @@ async fn run_test(resource: &str) -> Result<FileSystemPathVc> {
         )
         .cell();
 
-    let custom_ecma_transform_plugins = Some(CustomEcmascriptTransformPluginsVc::cell(
+    let custom_ecma_transform_plugins = Some(CustomEcmascriptTransformPlugins::cell(
         CustomEcmascriptTransformPlugins {
             source_transforms: vec![
-                TransformPluginVc::cell(Box::new(
+                TransformPlugin::cell(Box::new(
                     EmotionTransformer::new(&EmotionTransformConfig {
                         sourcemap: Some(false),
                         ..Default::default()
                     })
                     .expect("Should be able to create emotion transformer"),
                 )),
-                TransformPluginVc::cell(Box::new(StyledComponentsTransformer::new(
+                TransformPlugin::cell(Box::new(StyledComponentsTransformer::new(
                     &StyledComponentsTransformConfig::default(),
                 ))),
             ],
             output_transforms: vec![],
         },
     ));
-    let context: AssetContextVc = ModuleAssetContextVc::new(
-        TransitionsByNameVc::cell(HashMap::new()),
+    let context: Vc<Box<dyn AssetContext>> = Vc::upcast(ModuleAssetContext::new(
+        Vc::cell(HashMap::new()),
         compile_time_info,
         ModuleOptionsContext {
-            enable_jsx: Some(JsxTransformOptionsVc::cell(JsxTransformOptions {
+            enable_jsx: Some(JsxTransformOptions::cell(JsxTransformOptions {
                 development: true,
                 ..Default::default()
             })),
@@ -302,26 +298,21 @@ async fn run_test(resource: &str) -> Result<FileSystemPathVc> {
             ..Default::default()
         }
         .cell(),
-    )
-    .into();
+    ));
 
     let runtime_entries = maybe_load_env(context, project_path)
         .await?
-        .map(|asset| EvaluatableAssetsVc::one(EvaluatableAssetVc::from_asset(asset, context)));
+        .map(|asset| EvaluatableAssets::one(EvaluatableAsset::from_asset(asset, context)));
 
     let chunk_root_path = path.join("output");
     let static_root_path = path.join("static");
-    let chunking_context: ChunkingContextVc = match options.runtime {
-        Runtime::Dev => DevChunkingContextVc::builder(
-            project_root,
-            path,
-            chunk_root_path,
-            static_root_path,
-            env,
-        )
-        .runtime_type(options.runtime_type)
-        .build(),
-        Runtime::Build => BuildChunkingContextVc::builder(
+    let chunking_context: Vc<Box<dyn ChunkingContext>> = match options.runtime {
+        Runtime::Dev => {
+            DevChunkingContext::builder(project_root, path, chunk_root_path, static_root_path, env)
+                .runtime_type(options.runtime_type)
+                .build()
+        }
+        Runtime::Build => BuildChunkingContext::builder(
             project_root,
             path,
             chunk_root_path,
@@ -339,7 +330,7 @@ async fn run_test(resource: &str) -> Result<FileSystemPathVc> {
         .copied()
         .collect();
 
-    let modules = entry_paths.into_iter().map(SourceAssetVc::new).map(|p| {
+    let modules = entry_paths.into_iter().map(SourceAsset::new).map(|p| {
         context.process(
             p.into(),
             Value::new(ReferenceType::Entry(EntryReferenceSubType::Undefined)),
@@ -348,15 +339,19 @@ async fn run_test(resource: &str) -> Result<FileSystemPathVc> {
 
     let chunk_groups = modules
         .map(|module| async move {
-            if let Some(ecmascript) = EcmascriptModuleAssetVc::resolve_from(module).await? {
+            if let Some(ecmascript) =
+                Vc::try_resolve_downcast_type::<EcmascriptModuleAsset>(module).await?
+            {
                 // TODO: Load runtime entries from snapshots
                 Ok(chunking_context.evaluated_chunk_group(
                     ecmascript.as_root_chunk(chunking_context),
                     runtime_entries
-                        .unwrap_or_else(EvaluatableAssetsVc::empty)
+                        .unwrap_or_else(EvaluatableAssets::empty)
                         .with_entry(ecmascript.into()),
                 ))
-            } else if let Some(chunkable) = ChunkableAssetVc::resolve_from(module).await? {
+            } else if let Some(chunkable) =
+                Vc::try_resolve_sidecast::<Box<dyn ChunkableAsset>>(module).await?
+            {
                 Ok(chunking_context.chunk_group(chunkable.as_root_chunk(chunking_context)))
             } else {
                 // TODO convert into a serve-able asset
@@ -399,10 +394,10 @@ async fn run_test(resource: &str) -> Result<FileSystemPathVc> {
 }
 
 async fn walk_asset(
-    asset: AssetVc,
-    output_path: &FileSystemPathReadRef,
-    seen: &mut HashSet<FileSystemPathVc>,
-    queue: &mut VecDeque<AssetVc>,
+    asset: Vc<Box<dyn Asset>>,
+    output_path: &ReadRef<FileSystemPath>,
+    seen: &mut HashSet<Vc<FileSystemPath>>,
+    queue: &mut VecDeque<Vc<Box<dyn Asset>>>,
 ) -> Result<()> {
     let path = asset.ident().path().resolve().await?;
 
@@ -421,16 +416,16 @@ async fn walk_asset(
 }
 
 async fn maybe_load_env(
-    _context: AssetContextVc,
-    path: FileSystemPathVc,
-) -> Result<Option<AssetVc>> {
+    _context: Vc<Box<dyn AssetContext>>,
+    path: Vc<FileSystemPath>,
+) -> Result<Option<Vc<Box<dyn Asset>>>> {
     let dotenv_path = path.join("input/.env");
 
     if !dotenv_path.read().await?.is_content() {
         return Ok(None);
     }
 
-    let env = DotenvProcessEnvVc::new(None, dotenv_path);
-    let asset = ProcessEnvAssetVc::new(dotenv_path, env.into());
+    let env = DotenvProcessEnv::new(None, dotenv_path);
+    let asset = ProcessEnvAsset::new(dotenv_path, env.into());
     Ok(Some(asset.into()))
 }

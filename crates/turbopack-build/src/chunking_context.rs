@@ -2,31 +2,27 @@ use anyhow::Result;
 use indexmap::IndexSet;
 use turbo_tasks::{
     graph::{GraphTraversal, ReverseTopological},
-    primitives::{BoolVc, StringVc},
-    TryJoinIterExt, Value,
+    TryJoinIterExt, Value, Vc,
 };
-use turbo_tasks_fs::FileSystemPathVc;
+use turbo_tasks_fs::FileSystemPath;
 use turbopack_core::{
-    asset::{Asset, AssetVc, AssetsVc},
-    chunk::{
-        Chunk, ChunkVc, ChunkableAsset, ChunkingContext, ChunkingContextVc, ChunksVc,
-        EvaluatableAssetsVc,
-    },
-    environment::EnvironmentVc,
-    ident::AssetIdentVc,
+    asset::{Asset, Assets},
+    chunk::{Chunk, ChunkableAsset, ChunkingContext, Chunks, EvaluatableAssets},
+    environment::Environment,
+    ident::AssetIdent,
 };
-use turbopack_css::chunk::CssChunkVc;
+use turbopack_css::chunk::CssChunk;
 use turbopack_ecmascript::{
-    chunk::{EcmascriptChunkVc, EcmascriptChunkingContext, EcmascriptChunkingContextVc},
-    EcmascriptModuleAssetVc,
+    chunk::{EcmascriptChunk, EcmascriptChunkingContext},
+    EcmascriptModuleAsset,
 };
 use turbopack_ecmascript_runtime::RuntimeType;
 
 use crate::ecmascript::node::{
-    chunk::EcmascriptBuildNodeChunkVc, evaluate::chunk::EcmascriptBuildNodeEvaluateChunkVc,
+    chunk::EcmascriptBuildNodeChunk, evaluate::chunk::EcmascriptBuildNodeEvaluateChunk,
 };
 
-/// A builder for [`BuildChunkingContextVc`].
+/// A builder for [`Vc<BuildChunkingContext>`].
 pub struct BuildChunkingContextBuilder {
     context: BuildChunkingContext,
 }
@@ -38,8 +34,8 @@ impl BuildChunkingContextBuilder {
     }
 
     /// Builds the chunking context.
-    pub fn build(self) -> BuildChunkingContextVc {
-        BuildChunkingContextVc::new(Value::new(self.context))
+    pub fn build(self) -> Vc<BuildChunkingContext> {
+        BuildChunkingContext::new(Value::new(self.context))
     }
 }
 
@@ -49,29 +45,29 @@ impl BuildChunkingContextBuilder {
 pub struct BuildChunkingContext {
     /// This path get stripped off of chunk paths before generating output asset
     /// paths.
-    context_path: FileSystemPathVc,
+    context_path: Vc<FileSystemPath>,
     /// This path is used to compute the url to request chunks or assets from
-    output_root: FileSystemPathVc,
+    output_root: Vc<FileSystemPath>,
     /// Chunks are placed at this path
-    chunk_root_path: FileSystemPathVc,
+    chunk_root_path: Vc<FileSystemPath>,
     /// Static assets are placed at this path
-    asset_root_path: FileSystemPathVc,
+    asset_root_path: Vc<FileSystemPath>,
     /// Layer name within this context
     layer: Option<String>,
     /// The environment chunks will be evaluated in.
-    environment: EnvironmentVc,
+    environment: Vc<Environment>,
     /// The kind of runtime to include in the output.
     runtime_type: RuntimeType,
 }
 
-impl BuildChunkingContextVc {
+impl BuildChunkingContext {
     /// Creates a new chunking context builder.
     pub fn builder(
-        context_path: FileSystemPathVc,
-        output_root: FileSystemPathVc,
-        chunk_root_path: FileSystemPathVc,
-        asset_root_path: FileSystemPathVc,
-        environment: EnvironmentVc,
+        context_path: Vc<FileSystemPath>,
+        output_root: Vc<FileSystemPath>,
+        chunk_root_path: Vc<FileSystemPath>,
+        asset_root_path: Vc<FileSystemPath>,
+        environment: Vc<Environment>,
     ) -> BuildChunkingContextBuilder {
         BuildChunkingContextBuilder {
             context: BuildChunkingContext {
@@ -98,28 +94,27 @@ impl BuildChunkingContext {
 }
 
 #[turbo_tasks::value_impl]
-impl BuildChunkingContextVc {
+impl BuildChunkingContext {
     #[turbo_tasks::function]
-    fn new(this: Value<BuildChunkingContext>) -> Self {
+    fn new(this: Value<BuildChunkingContext>) -> Vc<Self> {
         this.into_value().cell()
     }
 
     #[turbo_tasks::function]
     fn generate_evaluate_chunk(
-        self_vc: BuildChunkingContextVc,
-        entry_chunk: ChunkVc,
-        other_chunks: AssetsVc,
-        evaluatable_assets: EvaluatableAssetsVc,
-        exported_module: Option<EcmascriptModuleAssetVc>,
-    ) -> AssetVc {
-        EcmascriptBuildNodeEvaluateChunkVc::new(
-            self_vc,
+        self: Vc<Self>,
+        entry_chunk: Vc<Box<dyn Chunk>>,
+        other_chunks: Vc<Assets>,
+        evaluatable_assets: Vc<EvaluatableAssets>,
+        exported_module: Option<Vc<EcmascriptModuleAsset>>,
+    ) -> Vc<Box<dyn Asset>> {
+        Vc::upcast(EcmascriptBuildNodeEvaluateChunk::new(
+            self,
             entry_chunk,
             other_chunks,
             evaluatable_assets,
             exported_module,
-        )
-        .into()
+        ))
     }
 
     /// Generates an output chunk that:
@@ -128,19 +123,19 @@ impl BuildChunkingContextVc {
     ///   default export.
     #[turbo_tasks::function]
     pub async fn generate_exported_chunk(
-        self_vc: BuildChunkingContextVc,
-        module: EcmascriptModuleAssetVc,
-        evaluatable_assets: EvaluatableAssetsVc,
-    ) -> Result<AssetVc> {
-        let entry_chunk = module.as_root_chunk(self_vc.into());
+        self: Vc<Self>,
+        module: Vc<EcmascriptModuleAsset>,
+        evaluatable_assets: Vc<EvaluatableAssets>,
+    ) -> Result<Vc<Box<dyn Asset>>> {
+        let entry_chunk = module.as_root_chunk(self.into());
 
-        let assets = self_vc
+        let assets = self
             .get_evaluate_chunk_assets(entry_chunk, evaluatable_assets)
             .await?;
 
-        let asset = self_vc.generate_evaluate_chunk(
+        let asset = self.generate_evaluate_chunk(
             entry_chunk,
-            AssetsVc::cell(assets),
+            Vc::cell(assets),
             evaluatable_assets,
             Some(module),
         );
@@ -149,10 +144,15 @@ impl BuildChunkingContextVc {
     }
 
     #[turbo_tasks::function]
-    async fn generate_chunk(self, chunk: ChunkVc) -> Result<AssetVc> {
+    async fn generate_chunk(
+        self: Vc<Self>,
+        chunk: Vc<Box<dyn Chunk>>,
+    ) -> Result<Vc<Box<dyn Asset>>> {
         Ok(
-            if let Some(ecmascript_chunk) = EcmascriptChunkVc::resolve_from(chunk).await? {
-                EcmascriptBuildNodeChunkVc::new(self, ecmascript_chunk).into()
+            if let Some(ecmascript_chunk) =
+                Vc::try_resolve_downcast_type::<EcmascriptChunk>(chunk).await?
+            {
+                Vc::upcast(EcmascriptBuildNodeChunk::new(self, ecmascript_chunk))
             } else {
                 chunk.into()
             },
@@ -160,12 +160,12 @@ impl BuildChunkingContextVc {
     }
 }
 
-impl BuildChunkingContextVc {
+impl BuildChunkingContext {
     async fn get_evaluate_chunk_assets(
         self,
-        entry_chunk: ChunkVc,
-        evaluatable_assets: EvaluatableAssetsVc,
-    ) -> Result<Vec<AssetVc>> {
+        entry_chunk: Vc<Box<dyn Chunk>>,
+        evaluatable_assets: Vc<EvaluatableAssets>,
+    ) -> Result<Vec<Vc<Box<dyn Asset>>>> {
         let evaluatable_assets_ref = evaluatable_assets.await?;
 
         let mut chunks: IndexSet<_> = evaluatable_assets_ref
@@ -197,22 +197,26 @@ impl BuildChunkingContextVc {
 #[turbo_tasks::value_impl]
 impl ChunkingContext for BuildChunkingContext {
     #[turbo_tasks::function]
-    fn context_path(&self) -> FileSystemPathVc {
+    fn context_path(&self) -> Vc<FileSystemPath> {
         self.context_path
     }
 
     #[turbo_tasks::function]
-    fn output_root(&self) -> FileSystemPathVc {
+    fn output_root(&self) -> Vc<FileSystemPath> {
         self.output_root
     }
 
     #[turbo_tasks::function]
-    fn environment(&self) -> EnvironmentVc {
+    fn environment(&self) -> Vc<Environment> {
         self.environment
     }
 
     #[turbo_tasks::function]
-    async fn chunk_path(&self, ident: AssetIdentVc, extension: &str) -> Result<FileSystemPathVc> {
+    async fn chunk_path(
+        &self,
+        ident: Vc<AssetIdent>,
+        extension: String,
+    ) -> Result<Vc<FileSystemPath>> {
         let root_path = self.chunk_root_path;
         let root_path = if let Some(layer) = self.layer.as_deref() {
             root_path.join(layer)
@@ -224,30 +228,34 @@ impl ChunkingContext for BuildChunkingContext {
     }
 
     #[turbo_tasks::function]
-    fn reference_chunk_source_maps(&self, _chunk: AssetVc) -> BoolVc {
-        BoolVc::cell(true)
+    fn reference_chunk_source_maps(&self, _chunk: Vc<Box<dyn Asset>>) -> Vc<bool> {
+        Vc::cell(true)
     }
 
     #[turbo_tasks::function]
-    async fn can_be_in_same_chunk(&self, asset_a: AssetVc, asset_b: AssetVc) -> Result<BoolVc> {
+    async fn can_be_in_same_chunk(
+        &self,
+        asset_a: Vc<Box<dyn Asset>>,
+        asset_b: Vc<Box<dyn Asset>>,
+    ) -> Result<Vc<bool>> {
         let parent_dir = asset_a.ident().path().parent().await?;
 
         let path = asset_b.ident().path().await?;
         if let Some(rel_path) = parent_dir.get_path_to(&path) {
             if !rel_path.starts_with("node_modules/") && !rel_path.contains("/node_modules/") {
-                return Ok(BoolVc::cell(true));
+                return Ok(Vc::cell(true));
             }
         }
 
-        Ok(BoolVc::cell(false))
+        Ok(Vc::cell(false))
     }
 
     #[turbo_tasks::function]
     async fn asset_path(
         &self,
-        content_hash: &str,
-        original_asset_ident: AssetIdentVc,
-    ) -> Result<FileSystemPathVc> {
+        content_hash: String,
+        original_asset_ident: Vc<AssetIdent>,
+    ) -> Result<Vc<FileSystemPath>> {
         let source_path = original_asset_ident.path().await?;
         let basename = source_path.file_name();
         let asset_path = match source_path.extension() {
@@ -265,66 +273,63 @@ impl ChunkingContext for BuildChunkingContext {
     }
 
     #[turbo_tasks::function]
-    fn layer(&self) -> StringVc {
-        StringVc::cell(self.layer.clone().unwrap_or_default())
+    fn layer(&self) -> Vc<String> {
+        Vc::cell(self.layer.clone().unwrap_or_default())
     }
 
     #[turbo_tasks::function]
-    async fn with_layer(self_vc: BuildChunkingContextVc, layer: &str) -> Result<ChunkingContextVc> {
-        let mut context = self_vc.await?.clone_value();
+    async fn with_layer(self: Vc<Self>, layer: String) -> Result<Vc<Box<dyn ChunkingContext>>> {
+        let mut context = self.await?.clone_value();
         context.layer = (!layer.is_empty()).then(|| layer.to_string());
-        Ok(BuildChunkingContextVc::new(Value::new(context)).into())
+        Ok(Vc::upcast(BuildChunkingContext::new(Value::new(context))))
     }
 
     #[turbo_tasks::function]
-    async fn chunk_group(
-        self_vc: BuildChunkingContextVc,
-        entry_chunk: ChunkVc,
-    ) -> Result<AssetsVc> {
+    async fn chunk_group(self: Vc<Self>, entry_chunk: Vc<Box<dyn Chunk>>) -> Result<Vc<Assets>> {
         let parallel_chunks = get_parallel_chunks([entry_chunk]).await?;
 
         let optimized_chunks = get_optimized_chunks(parallel_chunks).await?;
 
-        let assets: Vec<AssetVc> = optimized_chunks
+        let assets: Vec<Vc<Box<dyn Asset>>> = optimized_chunks
             .await?
             .iter()
-            .map(|chunk| self_vc.generate_chunk(*chunk))
+            .map(|chunk| self.generate_chunk(*chunk))
             .collect();
 
-        Ok(AssetsVc::cell(assets))
+        Ok(Vc::cell(assets))
     }
 
     #[turbo_tasks::function]
     async fn evaluated_chunk_group(
-        self_vc: BuildChunkingContextVc,
-        entry_chunk: ChunkVc,
-        evaluatable_assets: EvaluatableAssetsVc,
-    ) -> Result<AssetsVc> {
-        let mut assets = self_vc
+        self: Vc<Self>,
+        entry_chunk: Vc<Box<dyn Chunk>>,
+        evaluatable_assets: Vc<EvaluatableAssets>,
+    ) -> Result<Vc<Assets>> {
+        let mut assets = self
             .get_evaluate_chunk_assets(entry_chunk, evaluatable_assets)
             .await?;
 
-        assets.push(self_vc.generate_evaluate_chunk(
+        assets.push(self.generate_evaluate_chunk(
             entry_chunk,
-            AssetsVc::cell(assets.clone()),
+            Vc::cell(assets.clone()),
             evaluatable_assets,
             None,
         ));
 
-        Ok(AssetsVc::cell(assets))
+        Ok(Vc::cell(assets))
     }
 }
 
 #[turbo_tasks::value_impl]
 impl EcmascriptChunkingContext for BuildChunkingContext {}
 
-async fn get_parallel_chunks<I>(entries: I) -> Result<impl Iterator<Item = ChunkVc>>
+async fn get_parallel_chunks<I>(entries: I) -> Result<impl Iterator<Item = Vc<Box<dyn Chunk>>>>
 where
-    I: IntoIterator<Item = ChunkVc>,
+    I: IntoIterator<Item = Vc<Box<dyn Chunk>>>,
 {
     Ok(ReverseTopological::new()
         .skip_duplicates()
-        .visit(entries, |chunk: ChunkVc| async move {
+        .visit(entries, |chunk: Vc<Box<dyn Chunk>>| async move {
             Ok(chunk
                 .parallel_chunks()
                 .await?
@@ -339,18 +344,20 @@ where
         .into_iter())
 }
 
-async fn get_optimized_chunks<I>(chunks: I) -> Result<ChunksVc>
+async fn get_optimized_chunks<I>(chunks: I) -> Result<Vc<Chunks>>
 where
-    I: IntoIterator<Item = ChunkVc>,
+    I: IntoIterator<Item = Vc<Box<dyn Chunk>>>,
 {
     let mut ecmascript_chunks = vec![];
     let mut css_chunks = vec![];
     let mut other_chunks = vec![];
 
     for chunk in chunks.into_iter() {
-        if let Some(ecmascript_chunk) = EcmascriptChunkVc::resolve_from(&chunk).await? {
+        if let Some(ecmascript_chunk) =
+            Vc::try_resolve_downcast_type::<EcmascriptChunk>(chunk).await?
+        {
             ecmascript_chunks.push(ecmascript_chunk);
-        } else if let Some(css_chunk) = CssChunkVc::resolve_from(&chunk).await? {
+        } else if let Some(css_chunk) = Vc::try_resolve_downcast_type::<CssChunk>(chunk).await? {
             css_chunks.push(css_chunk);
         } else {
             other_chunks.push(chunk);
@@ -362,10 +369,10 @@ where
     let chunks = ecmascript_chunks
         .iter()
         .copied()
-        .map(|chunk| chunk.as_chunk())
-        .chain(css_chunks.iter().copied().map(|chunk| chunk.as_chunk()))
+        .map(|chunk| Vc::upcast(chunk))
+        .chain(css_chunks.iter().copied().map(|chunk| Vc::upcast(chunk)))
         .chain(other_chunks.into_iter())
         .collect();
 
-    Ok(ChunksVc::cell(chunks))
+    Ok(Vc::cell(chunks))
 }
