@@ -42,6 +42,7 @@ where
 {
     // TODO(alexkirsz) Should be private (or undocumented), but turbo-tasks-memory needs it to be
     // accessible.
+    #[doc(hidden)]
     pub node: RawVc,
     pub(crate) _t: PhantomData<T>,
 }
