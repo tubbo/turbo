@@ -107,7 +107,7 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
             (
                 quote! {
                     match value {
-                        turbo_tasks::TaskInput::List(value) => {
+                        turbo_tasks::ConcreteTaskInput::List(value) => {
                             let mut #inputs_list_ident = value.iter();
 
                             let discriminant = #inputs_list_ident.next().ok_or_else(|| anyhow::anyhow!(concat!("missing discriminant for ", stringify!(#ident))))?;
@@ -132,10 +132,10 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
                             #ident::#variants_idents #variants_fields_destructuring => {
                                 let mut #inputs_list_ident = Vec::with_capacity(1 + #variants_fields_len);
                                 let discriminant: #repr = #variants_discriminants;
-                                let discriminant: turbo_tasks::TaskInput = discriminant.into();
+                                let discriminant: turbo_tasks::ConcreteTaskInput = discriminant.into();
                                 #inputs_list_ident.push(discriminant);
                                 #variants_from_expansion
-                                turbo_tasks::TaskInput::List(#inputs_list_ident)
+                                turbo_tasks::ConcreteTaskInput::List(#inputs_list_ident)
                             }
                         )*
                     }
@@ -150,7 +150,7 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
             (
                 quote! {
                     match value {
-                        turbo_tasks::TaskInput::List(value) => {
+                        turbo_tasks::ConcreteTaskInput::List(value) => {
                             let mut #inputs_list_ident = value.iter();
                             #try_from_expansion
                             Ok(#ident #destructuring)
@@ -162,7 +162,7 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
                     let mut #inputs_list_ident = Vec::with_capacity(#fields_len);
                     let #ident #destructuring = value;
                     #from_expansion
-                    turbo_tasks::TaskInput::List(#inputs_list_ident)
+                    turbo_tasks::ConcreteTaskInput::List(#inputs_list_ident)
                 },
             )
         }
@@ -210,12 +210,12 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
 
             #[allow(non_snake_case)]
             #[allow(unreachable_code)] // This can occur for enums with no variants.
-            fn try_from(value: &'a turbo_tasks::TaskInput) -> Result<Self, Self::Error> {
+            fn try_from(value: &'a turbo_tasks::ConcreteTaskInput) -> Result<Self, Self::Error> {
                 #try_from_impl
             }
         }
 
-        impl<#(#generic_params: Into<turbo_tasks::TaskInput>,)*> From<#ident #generics> for turbo_tasks::TaskInput {
+        impl<#(#generic_params: Into<turbo_tasks::ConcreteTaskInput>,)*> From<#ident #generics> for turbo_tasks::ConcreteTaskInput {
             #[allow(non_snake_case)]
             #[allow(unreachable_code)] // This can occur for enums with no variants.
             fn from(value: #ident #generics) -> Self {
@@ -242,7 +242,7 @@ fn expand_named(
         },
         quote! {
             #(
-                let #fields_idents: turbo_tasks::TaskInput = #fields_idents.into();
+                let #fields_idents: turbo_tasks::ConcreteTaskInput = #fields_idents.into();
                 #inputs_list_ident.push(#fields_idents);
             )*
         },
@@ -265,7 +265,7 @@ fn expand_unnamed(
         },
         quote! {
             #(
-                let #fields_idents: turbo_tasks::TaskInput = #fields_idents.into();
+                let #fields_idents: turbo_tasks::ConcreteTaskInput = #fields_idents.into();
                 #inputs_list_ident.push(#fields_idents);
             )*
         },

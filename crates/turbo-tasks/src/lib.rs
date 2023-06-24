@@ -32,8 +32,8 @@
 #![feature(provide_any)]
 #![feature(new_uninit)]
 #![feature(arbitrary_self_types)]
-#![feature(type_alias_impl_trait)]
 #![feature(async_fn_in_trait)]
+#![feature(type_alias_impl_trait)]
 #![feature(never_type)]
 
 pub mod backend;
@@ -94,8 +94,9 @@ pub use native_function::NativeFunction;
 pub use raw_vc::{CellId, CollectiblesFuture, RawVc, ReadRawVcFuture, ResolveTypeError};
 pub use read_ref::ReadRef;
 pub use state::State;
-pub use task::concrete_task_input::{
-    ConcreteTaskInput, FromTaskInput, SharedReference, SharedValue,
+pub use task::{
+    concrete_task_input::{ConcreteTaskInput, FromTaskInput, SharedReference, SharedValue},
+    task_input::TaskInput,
 };
 pub use trait_ref::{IntoTraitRef, TraitRef};
 pub use turbo_tasks_macros::{function, value, value_impl, value_trait, TaskInput};
