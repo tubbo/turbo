@@ -1,6 +1,6 @@
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value as JsonValue};
+use serde_json::json;
 use turbo_tasks::{trace::TraceRawVcs, Completion, Value, Vc};
 use turbo_tasks_bytes::stream::SingleValue;
 use turbo_tasks_fs::{json::parse_json_with_source_context, File, FileContent};

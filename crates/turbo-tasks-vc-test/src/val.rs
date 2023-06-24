@@ -1,5 +1,5 @@
 use anyhow::Result;
-use turbo_tasks::{debug::ValueDebug, Completion, Vc};
+use turbo_tasks::{debug::ValueDebug, Vc};
 use turbo_tasks_memory::MemoryBackend;
 
 use crate::register;
@@ -26,7 +26,7 @@ impl Val {
 pub trait Add {
     fn add(self: Vc<Self>, val: i32) -> Vc<Self>;
 
-    async fn with_sub(self: Vc<Self>, sub: Vc<Box<dyn Sub>>) -> Result<Vc<Self>> {
+    async fn with_sub(self: Vc<Self>, _sub: Vc<Box<dyn Sub>>) -> Result<Vc<Self>> {
         Ok(self)
     }
 }

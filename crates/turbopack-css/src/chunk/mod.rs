@@ -9,11 +9,11 @@ use indexmap::IndexSet;
 use turbo_tasks::{TryJoinIterExt, Value, ValueToString, Vc};
 use turbo_tasks_fs::{rope::Rope, File, FileSystemPathOption};
 use turbopack_core::{
-    asset::{Asset, AssetContent, Assets},
+    asset::{Asset, AssetContent},
     chunk::{
         availability_info::AvailabilityInfo, chunk_content, chunk_content_split, Chunk,
         ChunkContentResult, ChunkGroupReference, ChunkItem, ChunkableAsset, ChunkingContext,
-        Chunks, FromChunkableAsset, ModuleId, ModuleIds, OutputChunk, OutputChunkRuntimeInfo,
+        Chunks, FromChunkableAsset, ModuleId, OutputChunk, OutputChunkRuntimeInfo,
     },
     code_builder::{Code, CodeBuilder},
     ident::AssetIdent,

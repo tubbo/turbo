@@ -1,7 +1,6 @@
 use std::ops::Deref;
 
 use auto_hash_map::AutoSet;
-use turbo_tasks::debug::ValueDebugFormat;
 use turbo_tasks_macros::primitive;
 
 use crate::{self as turbo_tasks, RawVc, Vc};

@@ -32,7 +32,6 @@ use crate::{
         item::EcmascriptChunkItemExt, EcmascriptChunk, EcmascriptChunkItem,
         EcmascriptChunkItemContent, EcmascriptChunkingContext, EcmascriptExports,
     },
-    chunk_group_files_asset::ChunkGroupFilesAsset,
     code_gen::CodeGeneration,
     create_visitor,
     references::{

@@ -12,7 +12,6 @@ use turbopack_core::{
     code_builder::{Code, CodeBuilder},
     version::{
         MergeableVersionedContent, Update, Version, VersionedContent, VersionedContentMerger,
-        VersionedContents,
     },
 };
 use turbopack_ecmascript::utils::StringifyJs;

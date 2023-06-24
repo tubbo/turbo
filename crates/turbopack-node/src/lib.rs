@@ -15,7 +15,7 @@ use turbo_tasks::{
     Completion, Completions, TryJoinIterExt, ValueToString, Vc,
 };
 use turbo_tasks_env::ProcessEnv;
-use turbo_tasks_fs::{to_sys_path, File, FileContent, FileSystemPath};
+use turbo_tasks_fs::{to_sys_path, File, FileSystemPath};
 use turbopack_core::{
     asset::{Asset, AssetContent, AssetsSet},
     chunk::{ChunkableAsset, ChunkingContext, EvaluatableAsset, EvaluatableAssets},

@@ -16,11 +16,9 @@ pub(crate) mod references;
 pub(crate) mod transform;
 pub(crate) mod util;
 
-use anyhow::Result;
 pub use asset::CssModuleAsset;
 pub use module_asset::ModuleCssModuleAsset;
 pub use transform::{CssInputTransform, CssInputTransforms};
-use turbo_tasks::Vc;
 
 use crate::references::import::ImportAssetReference;
 

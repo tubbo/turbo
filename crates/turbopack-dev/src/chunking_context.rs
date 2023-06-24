@@ -11,8 +11,8 @@ use turbopack_core::{
     environment::Environment,
     ident::AssetIdent,
 };
-use turbopack_css::chunk::{CssChunk, CssChunks};
-use turbopack_ecmascript::chunk::{EcmascriptChunk, EcmascriptChunkingContext, EcmascriptChunks};
+use turbopack_css::chunk::CssChunk;
+use turbopack_ecmascript::chunk::{EcmascriptChunk, EcmascriptChunkingContext};
 use turbopack_ecmascript_runtime::RuntimeType;
 
 use crate::{

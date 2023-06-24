@@ -98,65 +98,6 @@ where
 unsafe impl<T> Send for Ptr<T> where T: ?Sized {}
 unsafe impl<T> Sync for Ptr<T> where T: ?Sized {}
 
-fn test() -> impl std::future::Future<Output = ()> + Send {
-    let ptr = Ptr { _t: PhantomData };
-
-    async move { expects_fnonce([ptr], |ptr| async move {}).await }
-}
-
-async fn expects_fnonce<It, F, Fut>(it: It, f: F) -> ()
-where
-    It: IntoIterator<Item = Ptr<dyn What>>,
-    F: Fn(Ptr<dyn What>) -> Fut,
-    Fut: std::future::Future<Output = ()>,
-{
-    for ptr in it {
-        f(ptr).await;
-    }
-}
-
-trait ReproTrait {}
-
-struct ReproStruct<T> {
-    _t: PhantomData<T>,
-}
-
-impl<T> Clone for ReproStruct<T> {
-    fn clone(&self) -> Self {
-        Self { _t: PhantomData }
-    }
-}
-
-unsafe impl<T> Send for ReproStruct<T> {}
-unsafe impl<T> Sync for ReproStruct<T> {}
-
-impl<T> Eq for ReproStruct<T> {}
-
-impl<T> PartialEq for ReproStruct<T> {
-    fn eq(&self, _other: &Self) -> bool {
-        true
-    }
-}
-
-impl<T> std::hash::Hash for ReproStruct<T> {
-    fn hash<H: std::hash::Hasher>(&self, _state: &mut H) {}
-}
-
-async fn get_edges(
-    asset: ReproStruct<Box<dyn ReproTrait>>,
-) -> Result<Vec<ReproStruct<Box<dyn ReproTrait>>>> {
-    Ok(vec![asset])
-}
-
-#[doc(hidden)]
-fn small_repro_inline_function(
-    root: ReproStruct<Box<dyn ReproTrait>>,
-) -> impl std::future::Future<Output = ()> + Send {
-    async move {
-        ReverseTopological::new().visit([root], get_edges).await;
-    }
-}
-
 #[turbo_tasks::function]
 async fn chunkable_assets_set(root: Vc<Box<dyn Asset>>) -> Result<Vc<AssetsSet>> {
     let assets = ReverseTopological::new()

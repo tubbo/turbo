@@ -1,7 +1,7 @@
 use anyhow::Result;
 use indexmap::indexmap;
 use turbo_tasks::Vc;
-use turbo_tasks_env::{CommandLineProcessEnv, CustomProcessEnv, EnvMap, ProcessEnv};
+use turbo_tasks_env::{CommandLineProcessEnv, CustomProcessEnv, ProcessEnv};
 use turbo_tasks_fs::FileSystemPath;
 
 use crate::TryDotenvProcessEnv;

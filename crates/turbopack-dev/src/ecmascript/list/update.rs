@@ -6,7 +6,7 @@ use serde::Serialize;
 use turbo_tasks::{IntoTraitRef, TraitRef, Vc};
 use turbopack_core::version::{
     MergeableVersionedContent, PartialUpdate, TotalUpdate, Update, Version, VersionedContent,
-    VersionedContentMerger, VersionedContents,
+    VersionedContentMerger,
 };
 
 use super::{content::EcmascriptDevChunkListContent, version::EcmascriptDevChunkListVersion};

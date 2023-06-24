@@ -191,7 +191,7 @@ async fn module_factory_with_code_generation_issue(
                 ));
                 let error_message = format!("{}", PrettyPrintError(&error));
                 let js_error_message = serde_json::to_string(&error_message)?;
-                let issue = CodeGenerationIssue {
+                CodeGenerationIssue {
                     severity: IssueSeverity::Error.cell(),
                     path: chunk_item.asset_ident().path(),
                     title: Vc::cell("Code generation for chunk item errored".to_string()),

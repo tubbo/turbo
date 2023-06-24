@@ -8,7 +8,7 @@ use parking_lot::Mutex;
 use turbo_tasks::{duration_span, mark_finished, util::SharedError, RawVc, ValueToString, Vc};
 use turbo_tasks_bytes::{Bytes, Stream};
 use turbo_tasks_env::ProcessEnv;
-use turbo_tasks_fs::{File, FileContent, FileSystemPath};
+use turbo_tasks_fs::{File, FileSystemPath};
 use turbopack_core::{
     asset::{Asset, AssetContent},
     chunk::{ChunkingContext, EvaluatableAsset, EvaluatableAssets},

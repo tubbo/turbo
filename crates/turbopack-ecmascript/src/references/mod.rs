@@ -43,7 +43,7 @@ use swc_core::{
         },
     },
 };
-use turbo_tasks::{primitives::Regex as TurboRegex, TryJoinIterExt, Upcast, Value, Vc};
+use turbo_tasks::{TryJoinIterExt, Upcast, Value, Vc};
 use turbo_tasks_fs::{FileJsonContent, FileSystemPath};
 use turbopack_core::{
     asset::Asset,
@@ -988,8 +988,6 @@ pub(crate) async fn analyze_ecmascript_module(
                         )
                     }
                     JsValue::WellKnownFunction(WellKnownFunctionKind::NodePreGypFind) => {
-                        use turbo_tasks::Vc;
-
                         use crate::resolve::node_native_binding::NodePreGypConfigReference;
 
                         let args = linked_args(args).await?;
@@ -1029,8 +1027,6 @@ pub(crate) async fn analyze_ecmascript_module(
                         )
                     }
                     JsValue::WellKnownFunction(WellKnownFunctionKind::NodeGypBuild) => {
-                        use turbo_tasks::Vc;
-
                         use crate::resolve::node_native_binding::NodeGypBuildReference;
 
                         let args = linked_args(args).await?;
@@ -1063,8 +1059,6 @@ pub(crate) async fn analyze_ecmascript_module(
                         )
                     }
                     JsValue::WellKnownFunction(WellKnownFunctionKind::NodeBindings) => {
-                        use turbo_tasks::Vc;
-
                         use crate::resolve::node_native_binding::NodeBindingsReference;
 
                         let args = linked_args(args).await?;

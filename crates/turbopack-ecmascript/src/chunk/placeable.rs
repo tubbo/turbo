@@ -1,4 +1,3 @@
-use anyhow::Result;
 use turbo_tasks::Vc;
 use turbopack_core::{asset::Asset, chunk::ChunkableAsset};
 

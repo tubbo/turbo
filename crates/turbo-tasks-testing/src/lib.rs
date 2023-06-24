@@ -17,7 +17,7 @@ use turbo_tasks::{
     backend::CellContent,
     event::{Event, EventListener},
     registry,
-    test_helpers::{current_task_for_testing, with_turbo_tasks_for_testing},
+    test_helpers::with_turbo_tasks_for_testing,
     util::StaticOrArc,
     CellId, InvalidationReason, RawVc, TaskId, TraitTypeId, TurboTasksApi, TurboTasksCallApi, Vc,
 };

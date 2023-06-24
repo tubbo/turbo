@@ -690,6 +690,11 @@ where
                 ));
             }
         }
+        #[cfg(not(feature = "issue_path"))]
+        {
+            let _ = context;
+            let _ = description;
+        }
         Ok(self)
     }
 

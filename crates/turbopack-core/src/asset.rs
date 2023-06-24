@@ -2,7 +2,7 @@ use anyhow::Result;
 use indexmap::IndexSet;
 use turbo_tasks::{Completion, Vc};
 use turbo_tasks_fs::{
-    File, FileContent, FileJsonContent, FileLinesContent, FileSystemPath, LinkContent, LinkType,
+    FileContent, FileJsonContent, FileLinesContent, FileSystemPath, LinkContent, LinkType,
 };
 
 use crate::{

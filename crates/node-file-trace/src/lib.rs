@@ -36,8 +36,7 @@ use turbo_tasks_memory::{
 };
 use turbopack::{
     emit_asset, emit_with_completion, module_options::ModuleOptionsContext, rebase::RebasedAsset,
-    resolve_options_context::ResolveOptionsContext, transition::TransitionsByName,
-    ModuleAssetContext,
+    resolve_options_context::ResolveOptionsContext, ModuleAssetContext,
 };
 use turbopack_cli_utils::issue::{ConsoleUi, IssueSeverityCliOption, LogOptions};
 use turbopack_core::{
@@ -45,7 +44,7 @@ use turbopack_core::{
     compile_time_info::CompileTimeInfo,
     context::AssetContext,
     environment::{Environment, EnvironmentIntention, ExecutionEnvironment, NodeJsEnvironment},
-    issue::{Issue, IssueContextExt, IssueReporter, IssueSeverity},
+    issue::{IssueContextExt, IssueReporter, IssueSeverity},
     reference::all_assets,
     resolve::options::{ImportMapping, ResolvedMap},
     source_asset::SourceAsset,

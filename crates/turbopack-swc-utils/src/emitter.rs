@@ -49,7 +49,7 @@ impl Emitter for IssueEmitter {
         });
         // TODO add other primary and secondary spans with labels as sub_issues
 
-        let issue = AnalyzeIssue {
+        AnalyzeIssue {
             severity: match level {
                 Level::Bug => IssueSeverity::Bug,
                 Level::Fatal | Level::PhaseFatal => IssueSeverity::Fatal,

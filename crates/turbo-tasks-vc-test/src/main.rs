@@ -1,7 +1,6 @@
 #![feature(arbitrary_self_types)]
 
 use anyhow::Result;
-use turbo_tasks_memory::MemoryBackend;
 
 fn main() {
     use turbo_tasks_malloc::TurboMalloc;

@@ -11,12 +11,9 @@ use turbo_tasks_fs::{glob::Glob, FileSystemPath};
 use turbopack_core::{
     reference_type::{ReferenceType, UrlReferenceSubType},
     resolve::options::{ImportMap, ImportMapping},
-    source_transform::SourceTransforms,
 };
-use turbopack_css::{CssInputTransform, CssInputTransforms};
-use turbopack_ecmascript::{
-    EcmascriptInputTransform, EcmascriptInputTransforms, EcmascriptOptions, SpecifiedModuleType,
-};
+use turbopack_css::CssInputTransform;
+use turbopack_ecmascript::{EcmascriptInputTransform, EcmascriptOptions, SpecifiedModuleType};
 use turbopack_mdx::MdxTransformOptions;
 use turbopack_node::transforms::{postcss::PostCssTransform, webpack::WebpackLoaders};
 

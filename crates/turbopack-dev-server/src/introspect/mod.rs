@@ -2,7 +2,7 @@ use std::{borrow::Cow, collections::HashSet, fmt::Display};
 
 use anyhow::Result;
 use turbo_tasks::{registry, CellId, RawVc, ReadRef, TryJoinIterExt, Vc};
-use turbo_tasks_fs::{json::parse_json_with_source_context, File, FileContent};
+use turbo_tasks_fs::{json::parse_json_with_source_context, File};
 use turbopack_core::{
     asset::AssetContent,
     introspect::{Introspectable, IntrospectableChildren},

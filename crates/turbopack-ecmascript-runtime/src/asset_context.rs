@@ -1,8 +1,6 @@
 use turbo_tasks::Vc;
 use turbopack::{
     module_options::{ModuleOptionsContext, TypescriptTransformOptions},
-    resolve_options_context::ResolveOptionsContext,
-    transition::TransitionsByName,
     ModuleAssetContext,
 };
 use turbopack_core::{
