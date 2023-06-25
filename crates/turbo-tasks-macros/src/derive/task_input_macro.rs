@@ -111,7 +111,7 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
                             let mut #inputs_list_ident = value.iter();
 
                             let discriminant = #inputs_list_ident.next().ok_or_else(|| anyhow::anyhow!(concat!("missing discriminant for ", stringify!(#ident))))?;
-                            let discriminant: #repr = turbo_tasks::FromTaskInput::try_from(discriminant)?;
+                            let discriminant: #repr = turbo_tasks::TaskInput::try_from_concrete(discriminant)?;
 
                             Ok(match discriminant {
                                 #(
@@ -127,12 +127,12 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
                     }
                 },
                 quote! {
-                    match value {
+                    match self {
                         #(
                             #ident::#variants_idents #variants_fields_destructuring => {
                                 let mut #inputs_list_ident = Vec::with_capacity(1 + #variants_fields_len);
                                 let discriminant: #repr = #variants_discriminants;
-                                let discriminant: turbo_tasks::ConcreteTaskInput = discriminant.into();
+                                let discriminant = discriminant.into_concrete();
                                 #inputs_list_ident.push(discriminant);
                                 #variants_from_expansion
                                 turbo_tasks::ConcreteTaskInput::List(#inputs_list_ident)
@@ -160,7 +160,7 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
                 },
                 quote! {
                     let mut #inputs_list_ident = Vec::with_capacity(#fields_len);
-                    let #ident #destructuring = value;
+                    let #ident #destructuring = self;
                     #from_expansion
                     turbo_tasks::ConcreteTaskInput::List(#inputs_list_ident)
                 },
@@ -190,35 +190,19 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
         .collect();
 
     quote! {
-        impl
-            <
-                'a,
-                #(
-                    #generic_params:
-                        turbo_tasks::FromTaskInput<
-                            'a,
-                            // NOTE(alexkirsz) Couldn't find a way to accept any error type here.
-                            // Tried with a `#generic_params::Error: std::error::Error + Send + Sync + 'static` bound but
-                            // it clashes with `anyhow::Error` not implementing `std::error::Error`.
-                            Error = turbo_tasks::Error,
-                        >
-                    ,
-                )*
-            >
-            turbo_tasks::FromTaskInput<'a> for #ident #generics {
-            type Error = turbo_tasks::Error;
-
+        impl turbo_tasks::TaskInput for #ident #generics
+        where
+            #(#generic_params: turbo_tasks::TaskInput,)*
+        {
             #[allow(non_snake_case)]
             #[allow(unreachable_code)] // This can occur for enums with no variants.
-            fn try_from(value: &'a turbo_tasks::ConcreteTaskInput) -> Result<Self, Self::Error> {
+            fn try_from_concrete(value: &turbo_tasks::ConcreteTaskInput) -> turbo_tasks::Result<Self> {
                 #try_from_impl
             }
-        }
 
-        impl<#(#generic_params: Into<turbo_tasks::ConcreteTaskInput>,)*> From<#ident #generics> for turbo_tasks::ConcreteTaskInput {
             #[allow(non_snake_case)]
             #[allow(unreachable_code)] // This can occur for enums with no variants.
-            fn from(value: #ident #generics) -> Self {
+            fn into_concrete(self) -> turbo_tasks::ConcreteTaskInput {
                 #from_impl
             }
         }
@@ -237,7 +221,7 @@ fn expand_named(
         quote! {
             #(
                 let #fields_idents = #inputs_list_ident.next().ok_or_else(|| anyhow::anyhow!(concat!("missing element for ", stringify!(#fields_idents))))?;
-                let #fields_idents = turbo_tasks::FromTaskInput::try_from(#fields_idents)?;
+                let #fields_idents = turbo_tasks::TaskInput::try_from_concrete(#fields_idents)?;
             )*
         },
         quote! {
@@ -260,7 +244,7 @@ fn expand_unnamed(
         quote! {
             #(
                 let #fields_idents = #inputs_list_ident.next().ok_or_else(|| anyhow::anyhow!(concat!("missing element for ", stringify!(#fields_idents))))?;
-                let #fields_idents = turbo_tasks::FromTaskInput::try_from(#fields_idents)?;
+                let #fields_idents = turbo_tasks::TaskInput::try_from_concrete(#fields_idents)?;
             )*
         },
         quote! {

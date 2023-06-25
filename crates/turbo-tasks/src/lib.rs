@@ -95,7 +95,7 @@ pub use raw_vc::{CellId, CollectiblesFuture, RawVc, ReadRawVcFuture, ResolveType
 pub use read_ref::ReadRef;
 pub use state::State;
 pub use task::{
-    concrete_task_input::{ConcreteTaskInput, FromTaskInput, SharedReference, SharedValue},
+    concrete_task_input::{ConcreteTaskInput, SharedReference, SharedValue},
     task_input::TaskInput,
 };
 pub use trait_ref::{IntoTraitRef, TraitRef};

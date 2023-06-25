@@ -20,8 +20,7 @@ pub use self::{
 use crate::{
     debug::{ValueDebug, ValueDebugFormat, ValueDebugFormatString},
     trace::{TraceRawVcs, TraceRawVcsContext},
-    CollectiblesFuture, CollectiblesSource, ConcreteTaskInput, FromTaskInput, RawVc,
-    ReadRawVcFuture, ResolveTypeError,
+    CollectiblesFuture, CollectiblesSource, RawVc, ReadRawVcFuture, ResolveTypeError,
 };
 
 /// A Value Cell (`Vc` for short) is a reference to a memoized computation
@@ -431,20 +430,6 @@ where
     }
 }
 
-impl<T> FromTaskInput<'_> for Vc<T>
-where
-    T: ?Sized,
-{
-    type Error = anyhow::Error;
-
-    fn try_from(value: &ConcreteTaskInput) -> Result<Self, Self::Error> {
-        Ok(Self {
-            node: value.try_into()?,
-            _t: PhantomData,
-        })
-    }
-}
-
 impl<T> From<RawVc> for Vc<T>
 where
     T: ?Sized,
@@ -454,24 +439,6 @@ where
             node,
             _t: PhantomData,
         }
-    }
-}
-
-impl<T> From<Vc<T>> for ConcreteTaskInput
-where
-    T: ?Sized,
-{
-    fn from(node_ref: Vc<T>) -> Self {
-        node_ref.node.into()
-    }
-}
-
-impl<T> From<&Vc<T>> for ConcreteTaskInput
-where
-    T: ?Sized,
-{
-    fn from(node_ref: &Vc<T>) -> Self {
-        node_ref.node.clone().into()
     }
 }
 
