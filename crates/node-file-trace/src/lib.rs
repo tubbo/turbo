@@ -24,8 +24,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use tokio::sync::mpsc::channel;
 use turbo_tasks::{
-    backend::Backend, util::FormatDuration, TaskId, TransientInstance, TransientValue, TurboTasks,
-    TurboTasksBackendApi, UpdateInfo, Value, Vc,
+    backend::Backend, unit, util::FormatDuration, TaskId, TransientInstance, TransientValue,
+    TurboTasks, TurboTasksBackendApi, UpdateInfo, Value, Vc,
 };
 use turbo_tasks_fs::{
     glob::Glob, DirectoryEntry, DiskFileSystem, FileSystem, FileSystemPath, ReadGlobResult,
@@ -512,7 +512,7 @@ async fn run<B: Backend + 'static, F: Future<Output = ()>>(
                 sender.send(output_iter.collect::<Vec<String>>()).await?;
                 drop(sender);
             }
-            Ok(Vc::<()>::cell(()).node)
+            Ok(unit().node)
         })
     });
     finish(tt, task).await?;
