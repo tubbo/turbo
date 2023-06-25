@@ -9,7 +9,7 @@ use anyhow::{anyhow, bail, Result};
 use super::concrete_task_input::TransientSharedValue;
 use crate::{
     magic_any::MagicAny, ConcreteTaskInput, RawVc, SharedValue, TransientInstance, TransientValue,
-    Value, Vc, VcValueType,
+    TypedForInput, Value, Vc, VcValueType,
 };
 
 pub trait TaskInput: Send + Sync + Clone {
@@ -197,6 +197,7 @@ where
         + Send
         + Sync
         + VcValueType
+        + TypedForInput
         + 'static,
 {
     fn try_from_concrete(input: &ConcreteTaskInput) -> Result<Self> {
