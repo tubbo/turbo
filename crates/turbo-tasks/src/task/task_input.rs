@@ -332,7 +332,7 @@ mod tests {
     where
         T: TaskInput,
     {
-        TaskInput::try_from_concrete(&ConcreteTaskInput::from(t))
+        TaskInput::try_from_concrete(&TaskInput::into_concrete(t))
     }
 
     macro_rules! test_conversion {

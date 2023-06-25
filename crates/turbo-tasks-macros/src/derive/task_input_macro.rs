@@ -190,7 +190,7 @@ pub fn derive_task_input(input: TokenStream) -> TokenStream {
         .collect();
 
     quote! {
-        impl turbo_tasks::TaskInput for #ident #generics
+        impl #generics turbo_tasks::TaskInput for #ident #generics
         where
             #(#generic_params: turbo_tasks::TaskInput,)*
         {
@@ -226,7 +226,7 @@ fn expand_named(
         },
         quote! {
             #(
-                let #fields_idents: turbo_tasks::ConcreteTaskInput = #fields_idents.into();
+                let #fields_idents = #fields_idents.into_concrete();
                 #inputs_list_ident.push(#fields_idents);
             )*
         },
@@ -249,7 +249,7 @@ fn expand_unnamed(
         },
         quote! {
             #(
-                let #fields_idents: turbo_tasks::ConcreteTaskInput = #fields_idents.into();
+                let #fields_idents = #fields_idents.into_concrete();
                 #inputs_list_ident.push(#fields_idents);
             )*
         },
