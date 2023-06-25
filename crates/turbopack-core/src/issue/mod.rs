@@ -615,37 +615,14 @@ where
     Self: Sized,
 {
     #[allow(unused_variables, reason = "behind feature flag")]
-    async fn attach_context<T: CollectiblesSource + Copy + Send>(
+    async fn attach_context(
+        self,
         context: impl Into<Option<Vc<FileSystemPath>>> + Send,
         description: impl Into<String> + Send,
-        source: T,
-    ) -> Result<T> {
-        #[cfg(feature = "issue_path")]
-        {
-            let children = source.take_collectibles().await?;
-            if !children.is_empty() {
-                emit(Vc::upcast::<Box<dyn IssueProcessingPath>>(
-                    ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
-                        Some(IssueProcessingPathItem::cell(IssueProcessingPathItem {
-                            context: context.into(),
-                            description: Vc::cell(description.into()),
-                        })),
-                        children,
-                    )),
-                ));
-            }
-        }
-        Ok(source)
-    }
+    ) -> Result<Self>;
 
     #[allow(unused_variables, reason = "behind feature flag")]
-    async fn attach_description<T: CollectiblesSource + Copy + Send>(
-        source: T,
-
-        description: impl Into<String> + Send,
-    ) -> Result<T> {
-        Vc::<Self>::attach_context(None, description, source).await
-    }
+    async fn attach_description(self, description: impl Into<String> + Send) -> Result<Self>;
 
     async fn issue_context(
         self,
@@ -670,6 +647,35 @@ impl<T> IssueContextExt for T
 where
     T: CollectiblesSource + Copy + Send,
 {
+    #[allow(unused_variables, reason = "behind feature flag")]
+    async fn attach_context(
+        self,
+        context: impl Into<Option<Vc<FileSystemPath>>> + Send,
+        description: impl Into<String> + Send,
+    ) -> Result<Self> {
+        #[cfg(feature = "issue_path")]
+        {
+            let children = self.take_collectibles().await?;
+            if !children.is_empty() {
+                emit(Vc::upcast::<Box<dyn IssueProcessingPath>>(
+                    ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
+                        Some(IssueProcessingPathItem::cell(IssueProcessingPathItem {
+                            context: context.into(),
+                            description: Vc::cell(description.into()),
+                        })),
+                        children,
+                    )),
+                ));
+            }
+        }
+        Ok(self)
+    }
+
+    #[allow(unused_variables, reason = "behind feature flag")]
+    async fn attach_description(self, description: impl Into<String> + Send) -> Result<T> {
+        self.attach_context(None, description).await
+    }
+
     async fn issue_context(
         self,
         context: impl Into<Option<Vc<FileSystemPath>>> + Send,

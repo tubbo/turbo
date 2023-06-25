@@ -124,14 +124,11 @@ async fn get_client_module_options_context(
                 Vc::cell(Box::new(
                     EmotionTransformer::new(&EmotionTransformConfig::default())
                         .expect("Should be able to create emotion transformer"),
-                )
-                    as Box<dyn CustomTransformer + Send + Sync>),
+                ) as _),
                 Vc::cell(Box::new(StyledComponentsTransformer::new(
                     &StyledComponentsTransformConfig::default(),
-                ))
-                    as Box<dyn CustomTransformer + Send + Sync>),
-                Vc::cell(Box::new(StyledJsxTransformer::new())
-                    as Box<dyn CustomTransformer + Send + Sync>),
+                )) as _),
+                Vc::cell(Box::new(StyledJsxTransformer::new()) as _),
             ],
             output_transforms: vec![],
         },

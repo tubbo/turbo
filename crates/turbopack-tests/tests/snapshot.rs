@@ -427,5 +427,5 @@ async fn maybe_load_env(
 
     let env = DotenvProcessEnv::new(None, dotenv_path);
     let asset = ProcessEnvAsset::new(dotenv_path, env.into());
-    Ok(Some(asset.into()))
+    Ok(Some(Vc::upcast(asset)))
 }
