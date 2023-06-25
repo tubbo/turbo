@@ -1,46 +1,17 @@
 use proc_macro::TokenStream;
-use proc_macro2::Ident;
 use quote::quote;
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input, LitStr, Result, Token, Type,
-};
+use syn::parse_macro_input;
 use turbo_tasks_macros_shared::{
     get_register_value_type_ident, get_type_ident, get_value_type_id_ident, get_value_type_ident,
-    get_value_type_init_ident,
+    get_value_type_init_ident, PrimitiveInput,
 };
-
-#[derive(Debug)]
-struct PrimitiveInput {
-    ty: Type,
-    ident: Option<LitStr>,
-}
-
-impl Parse for PrimitiveInput {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let ty: Type = input.parse()?;
-        let colon: Option<Token![,]> = input.parse()?;
-
-        let ident = if colon.is_some() {
-            Some(input.parse()?)
-        } else {
-            None
-        };
-
-        Ok(PrimitiveInput { ty, ident })
-    }
-}
 
 // TODO(alexkirsz) Most of this should be shared with `value_macro`.
 pub fn primitive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as PrimitiveInput);
 
     let ty = input.ty;
-    let Some(ident) = input
-        .ident
-        .as_ref()
-        .map(|ident| Ident::new(&ident.value(), ident.span()))
-        .or_else(|| get_type_ident(&ty)) else {
+    let Some(ident) = get_type_ident(&ty) else {
         return quote! {
             // An error occurred while parsing the ident.
         }.into();

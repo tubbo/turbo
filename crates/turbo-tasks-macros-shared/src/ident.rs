@@ -172,6 +172,7 @@ pub fn get_path_ident(path: &Path) -> Ident {
 pub fn get_type_ident(ty: &Type) -> Option<Ident> {
     match ty {
         Type::Path(path) => Some(get_path_ident(&path.path)),
+        Type::Tuple(tuple) => Some(Ident::new("unit", tuple.span())),
         _ => {
             ty.span()
                 .unwrap()

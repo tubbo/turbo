@@ -1,12 +1,13 @@
 use std::ops::Deref;
 
 use auto_hash_map::AutoSet;
-use turbo_tasks_macros::primitive;
+// This specific macro identifier is detected by turbo-tasks-build.
+use turbo_tasks_macros::primitive as __turbo_tasks_internal_primitive;
 
 use crate::{self as turbo_tasks, RawVc, Vc};
 
-primitive!((), "unit");
-primitive!(String);
+__turbo_tasks_internal_primitive!(());
+__turbo_tasks_internal_primitive!(String);
 
 #[turbo_tasks::function]
 fn empty_string() -> Vc<String> {
@@ -20,8 +21,8 @@ impl Vc<String> {
     }
 }
 
-primitive!(Option<String>, "option_string");
-primitive!(Vec<String>, "vec_string");
+__turbo_tasks_internal_primitive!(Option<String>);
+__turbo_tasks_internal_primitive!(Vec<String>);
 
 #[turbo_tasks::function]
 fn empty_string_vec() -> Vc<Vec<String>> {
@@ -35,25 +36,25 @@ impl Vc<Vec<String>> {
     }
 }
 
-primitive!(Option<u16>, "option_u16");
+__turbo_tasks_internal_primitive!(Option<u16>);
 
-primitive!(bool);
+__turbo_tasks_internal_primitive!(bool);
 
-primitive!(u8);
-primitive!(u16);
-primitive!(u32);
-primitive!(u64);
-primitive!(u128);
-primitive!(i8);
-primitive!(i16);
-primitive!(i32);
-primitive!(i64);
-primitive!(i128);
-primitive!(usize);
-primitive!(isize);
-primitive!(AutoSet<RawVc>, "auto_set_raw_vc");
-primitive!(serde_json::Value, "json_value");
-primitive!(Vec<u8>, "vec_u8");
+__turbo_tasks_internal_primitive!(u8);
+__turbo_tasks_internal_primitive!(u16);
+__turbo_tasks_internal_primitive!(u32);
+__turbo_tasks_internal_primitive!(u64);
+__turbo_tasks_internal_primitive!(u128);
+__turbo_tasks_internal_primitive!(i8);
+__turbo_tasks_internal_primitive!(i16);
+__turbo_tasks_internal_primitive!(i32);
+__turbo_tasks_internal_primitive!(i64);
+__turbo_tasks_internal_primitive!(i128);
+__turbo_tasks_internal_primitive!(usize);
+__turbo_tasks_internal_primitive!(isize);
+__turbo_tasks_internal_primitive!(AutoSet<RawVc>);
+__turbo_tasks_internal_primitive!(serde_json::Value);
+__turbo_tasks_internal_primitive!(Vec<u8>);
 
 #[turbo_tasks::value(transparent, eq = "manual")]
 #[derive(Debug, Clone)]

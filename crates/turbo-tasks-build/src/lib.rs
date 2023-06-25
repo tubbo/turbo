@@ -11,14 +11,14 @@ use std::{
 use anyhow::{Context, Result};
 use glob::glob;
 use syn::{
-    parse_quote, Attribute, Ident, Item, ItemEnum, ItemFn, ItemImpl, ItemMod, ItemStruct,
-    ItemTrait, TraitItem, TraitItemMethod,
+    parse_quote, Attribute, Ident, Item, ItemEnum, ItemFn, ItemImpl, ItemMacro, ItemMod,
+    ItemStruct, ItemTrait, TraitItem, TraitItemMethod,
 };
 use turbo_tasks_macros_shared::{
     get_impl_function_ident, get_native_function_ident, get_path_ident,
     get_register_trait_methods_ident, get_register_value_type_ident,
     get_trait_default_impl_function_ident, get_trait_impl_function_ident, get_trait_type_ident,
-    get_type_ident, ValueTraitArguments,
+    get_type_ident, PrimitiveInput, ValueTraitArguments,
 };
 
 pub fn generate_register() {
@@ -204,6 +204,7 @@ impl<'a> RegisterContext<'a> {
             Item::Mod(mod_item) => self.process_mod(mod_item),
             Item::Struct(struct_item) => self.process_struct(struct_item),
             Item::Trait(trait_item) => self.process_trait(trait_item),
+            Item::Macro(macro_item) => self.process_macro(macro_item),
             _ => Ok(()),
         }
     }
@@ -328,6 +329,26 @@ impl<'a> RegisterContext<'a> {
                 )?;
             }
         }
+        Ok(())
+    }
+
+    fn process_macro(&mut self, macro_item: ItemMacro) -> Result<()> {
+        if macro_item
+            .mac
+            .path
+            .is_ident("__turbo_tasks_internal_primitive")
+        {
+            let input = macro_item.mac.tokens;
+            let input = syn::parse2::<PrimitiveInput>(input).unwrap();
+
+            let ty = input.ty;
+            let Some(ident) = get_type_ident(&ty) else {
+                return Ok(());
+            };
+
+            self.add_value(&ident);
+        }
+
         Ok(())
     }
 }
