@@ -1,12 +1,10 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
-use turbo_tasks_macros_shared::{
-    get_register_value_type_ident, get_type_ident, get_value_type_id_ident, get_value_type_ident,
-    get_value_type_init_ident, PrimitiveInput,
-};
+use turbo_tasks_macros_shared::{get_type_ident, PrimitiveInput};
 
-// TODO(alexkirsz) Most of this should be shared with `value_macro`.
+use crate::value_macro::value_type_and_register;
+
 pub fn primitive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as PrimitiveInput);
 
@@ -17,59 +15,41 @@ pub fn primitive(input: TokenStream) -> TokenStream {
         }.into();
     };
 
-    let value_type_init_ident = get_value_type_init_ident(&ident);
-    let value_type_ident = get_value_type_ident(&ident);
-    let value_type_id_ident = get_value_type_id_ident(&ident);
-    let register_value_type_ident = get_register_value_type_ident(&ident);
+    let value_debug_impl = quote! {
+        #[turbo_tasks::value_impl]
+        impl turbo_tasks::debug::ValueDebug for #ty {
+            #[turbo_tasks::function]
+            async fn dbg(&self) -> anyhow::Result<turbo_tasks::Vc<turbo_tasks::debug::ValueDebugString>> {
+                use turbo_tasks::debug::ValueDebugFormat;
+                self.value_debug_format(usize::MAX).try_to_value_debug_string().await
+            }
 
-    let new_value_type = quote! {
-        turbo_tasks::ValueType::new_with_any_serialization::<#ty>()
-    };
-
-    quote! {
-        #[doc(hidden)]
-        static #value_type_init_ident: turbo_tasks::macro_helpers::OnceCell<
-            turbo_tasks::ValueType,
-        > = turbo_tasks::macro_helpers::OnceCell::new();
-        #[doc(hidden)]
-        pub(crate) static #value_type_ident: turbo_tasks::macro_helpers::Lazy<&turbo_tasks::ValueType> =
-            turbo_tasks::macro_helpers::Lazy::new(|| {
-                #value_type_init_ident.get_or_init(|| {
-                    panic!(
-                        concat!(
-                            stringify!(#value_type_ident),
-                            " has not been initialized (this should happen via the generated register function)"
-                        )
-                    )
-                })
-            });
-        #[doc(hidden)]
-        static #value_type_id_ident: turbo_tasks::macro_helpers::Lazy<turbo_tasks::ValueTypeId> =
-            turbo_tasks::macro_helpers::Lazy::new(|| {
-                turbo_tasks::registry::get_value_type_id(*#value_type_ident)
-            });
-
-
-        #[doc(hidden)]
-        #[allow(non_snake_case)]
-        pub(crate) fn #register_value_type_ident(
-            global_name: &'static str,
-            f: impl FnOnce(&mut turbo_tasks::ValueType),
-        ) {
-            #value_type_init_ident.get_or_init(|| {
-                let mut value = #new_value_type;
-                f(&mut value);
-                value
-            }).register(global_name);
-        }
-
-        unsafe impl turbo_tasks::VcValueType for #ty {
-            type Read = turbo_tasks::VcTransparentRead<#ty, #ty>;
-            type CellMode = turbo_tasks::VcCellSharedMode<#ty>;
-
-            fn get_value_type_id() -> turbo_tasks::ValueTypeId {
-                *#value_type_id_ident
+            #[turbo_tasks::function]
+            async fn dbg_depth(&self, depth: usize) -> anyhow::Result<turbo_tasks::Vc<turbo_tasks::debug::ValueDebugString>> {
+                use turbo_tasks::debug::ValueDebugFormat;
+                self.value_debug_format(depth).try_to_value_debug_string().await
             }
         }
-    }.into()
+    };
+
+    let value_type_and_register = value_type_and_register(
+        &ident,
+        quote! { #ty },
+        quote! {
+            turbo_tasks::VcTransparentRead<#ty, #ty>
+        },
+        quote! {
+            turbo_tasks::VcCellSharedMode<#ty>
+        },
+        quote! {
+            turbo_tasks::ValueType::new_with_any_serialization::<#ty>()
+        },
+    );
+
+    quote! {
+        #value_type_and_register
+
+        #value_debug_impl
+    }
+    .into()
 }

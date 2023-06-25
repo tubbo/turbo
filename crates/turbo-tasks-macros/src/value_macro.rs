@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro2::Ident;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
@@ -210,11 +211,6 @@ pub fn value(args: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
 
-    let value_type_init_ident = get_value_type_init_ident(ident);
-    let value_type_ident = get_value_type_ident(ident);
-    let value_type_id_ident = get_value_type_id_ident(ident);
-    let register_value_type_ident = get_register_value_type_ident(ident);
-
     let mut inner_type = None;
     if transparent {
         if let Item::Struct(ItemStruct {
@@ -358,6 +354,9 @@ pub fn value(args: TokenStream, input: TokenStream) -> TokenStream {
         quote! {}
     };
 
+    let value_type_and_register_code =
+        value_type_and_register(ident, quote! { #ident }, read, cell_mode, new_value_type);
+
     let expanded = quote! {
         #derive
         #eq_derive
@@ -370,6 +369,29 @@ pub fn value(args: TokenStream, input: TokenStream) -> TokenStream {
 
         #into
 
+        #value_type_and_register_code
+
+        #for_input_marker
+
+        #value_debug_impl
+    };
+
+    expanded.into()
+}
+
+pub fn value_type_and_register(
+    ident: &Ident,
+    ty: proc_macro2::TokenStream,
+    read: proc_macro2::TokenStream,
+    cell_mode: proc_macro2::TokenStream,
+    new_value_type: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let value_type_init_ident = get_value_type_init_ident(&ident);
+    let value_type_ident = get_value_type_ident(&ident);
+    let value_type_id_ident = get_value_type_id_ident(&ident);
+    let register_value_type_ident = get_register_value_type_ident(&ident);
+
+    quote! {
         #[doc(hidden)]
         static #value_type_init_ident: turbo_tasks::macro_helpers::OnceCell<
             turbo_tasks::ValueType,
@@ -391,6 +413,8 @@ pub fn value(args: TokenStream, input: TokenStream) -> TokenStream {
             turbo_tasks::macro_helpers::Lazy::new(|| {
                 turbo_tasks::registry::get_value_type_id(*#value_type_ident)
             });
+
+
         #[doc(hidden)]
         #[allow(non_snake_case)]
         pub(crate) fn #register_value_type_ident(
@@ -404,11 +428,7 @@ pub fn value(args: TokenStream, input: TokenStream) -> TokenStream {
             }).register(global_name);
         }
 
-        #for_input_marker
-
-        #value_debug_impl
-
-        unsafe impl turbo_tasks::VcValueType for #ident {
+        unsafe impl turbo_tasks::VcValueType for #ty {
             type Read = #read;
             type CellMode = #cell_mode;
 
@@ -416,7 +436,5 @@ pub fn value(args: TokenStream, input: TokenStream) -> TokenStream {
                 *#value_type_id_ident
             }
         }
-    };
-
-    expanded.into()
+    }
 }
