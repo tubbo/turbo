@@ -3166,7 +3166,7 @@ mod tests {
         },
         testing::{fixture, run_test, NormalizedOutput},
     };
-    use turbo_tasks::{util::FormatDuration, Value, Vc};
+    use turbo_tasks::{util::FormatDuration, Value};
     use turbopack_core::{
         compile_time_info::CompileTimeInfo,
         environment::{Environment, EnvironmentIntention, ExecutionEnvironment, NodeJsEnvironment},

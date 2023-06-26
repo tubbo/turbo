@@ -1,6 +1,4 @@
 #![feature(trivial_bounds)]
-#![feature(once_cell)]
-#![feature(min_specialization)]
 
 use std::{
     collections::HashMap,
@@ -12,7 +10,7 @@ use std::{
 use anyhow::Result;
 use tokio::{spawn, time::sleep};
 use turbo_tasks::{
-    util::FormatDuration, Nothing, TurboTasks, TurboTasksBackendApi, UpdateInfo, Value, Vc,
+    unit, util::FormatDuration, TurboTasks, TurboTasksBackendApi, UpdateInfo, Value, Vc,
 };
 use turbo_tasks_fs::{DiskFileSystem, FileSystem};
 use turbo_tasks_memory::{
@@ -22,7 +20,7 @@ use turbo_tasks_memory::{
 };
 use turbopack::{
     emit_with_completion, rebase::RebasedAsset, register,
-    resolve_options_context::ResolveOptionsContext, transition::TransitionsByName,
+    resolve_options_context::ResolveOptionsContext,
 };
 use turbopack_core::{
     compile_time_info::CompileTimeInfo,
@@ -46,10 +44,10 @@ async fn main() -> Result<()> {
             disk_fs.await?.start_watching()?;
 
             // Smart Pointer cast
-            let fs: Vc<Box<dyn FileSystem>> = disk_fs.into();
-            let input = fs.root().join("demo");
-            let output = fs.root().join("out");
-            let entry = fs.root().join("demo/index.js");
+            let fs: Vc<Box<dyn FileSystem>> = Vc::upcast(disk_fs);
+            let input = fs.root().join("demo".to_string());
+            let output = fs.root().join("out".to_string());
+            let entry = fs.root().join("demo/index.js".to_string());
 
             let source = SourceAsset::new(entry);
             let context = turbopack::ModuleAssetContext::new(
@@ -71,13 +69,13 @@ async fn main() -> Result<()> {
                 .cell(),
             );
             let module = context.process(
-                source.into(),
+                Vc::upcast(source),
                 Value::new(turbopack_core::reference_type::ReferenceType::Undefined),
             );
             let rebased = RebasedAsset::new(module, input, output);
-            emit_with_completion(rebased.into(), output).await?;
+            emit_with_completion(Vc::upcast(rebased), output).await?;
 
-            Ok(Nothing::new().into())
+            Ok(unit().node)
         })
     });
     spawn({

@@ -1,6 +1,4 @@
 #![feature(trivial_bounds)]
-#![feature(once_cell)]
-#![feature(min_specialization)]
 
 use std::{
     collections::BTreeMap,
@@ -11,7 +9,7 @@ use std::{
 
 use anyhow::Result;
 use sha2::{Digest, Sha256};
-use turbo_tasks::{util::FormatDuration, Nothing, TurboTasks, UpdateInfo, Vc};
+use turbo_tasks::{unit, util::FormatDuration, TurboTasks, UpdateInfo, Vc};
 use turbo_tasks_fs::{
     glob::Glob, register, DirectoryEntry, DiskFileSystem, FileContent, FileSystem, FileSystemPath,
     ReadGlobResult,
@@ -33,13 +31,13 @@ async fn main() -> Result<()> {
             disk_fs.await?.start_watching()?;
 
             // Smart Pointer cast
-            let fs: Vc<Box<dyn FileSystem>> = disk_fs.into();
-            let input = fs.root().join("crates");
-            let glob = Glob::new("**/*.rs");
+            let fs: Vc<Box<dyn FileSystem>> = Vc::upcast(disk_fs);
+            let input = fs.root().join("crates".to_string());
+            let glob = Glob::new("**/*.rs".to_string());
             let glob_result = input.read_glob(glob, true);
             let dir_hash = hash_glob_result(glob_result);
             print_hash(dir_hash);
-            Ok(Nothing::new().into())
+            Ok(unit().node)
         })
     });
     tt.wait_task_completion(task, true).await.unwrap();
