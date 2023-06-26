@@ -3,8 +3,10 @@ pub mod asset;
 use indexmap::IndexSet;
 use turbo_tasks::Vc;
 
+type VcDynIntrospectable = Vc<Box<dyn Introspectable>>;
+
 #[turbo_tasks::value(transparent)]
-pub struct IntrospectableChildren(IndexSet<(Vc<String>, Vc<Box<dyn Introspectable>>)>);
+pub struct IntrospectableChildren(IndexSet<(Vc<String>, VcDynIntrospectable)>);
 
 #[turbo_tasks::value_trait]
 pub trait Introspectable {

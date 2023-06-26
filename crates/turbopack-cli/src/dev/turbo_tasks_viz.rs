@@ -21,6 +21,7 @@ pub struct TurboTasksSource {
 }
 
 impl TurboTasksSource {
+    #[allow(unused)]
     pub fn new(turbo_tasks: Arc<TurboTasks<MemoryBackend>>) -> Vc<Self> {
         Self::cell(TurboTasksSource { turbo_tasks })
     }

@@ -410,8 +410,8 @@ where
     let chunks = ecmascript_chunks
         .iter()
         .copied()
-        .map(|chunk| Vc::upcast(chunk))
-        .chain(css_chunks.iter().copied().map(|chunk| Vc::upcast(chunk)))
+        .map(Vc::upcast)
+        .chain(css_chunks.iter().copied().map(Vc::upcast))
         .chain(other_chunks.into_iter())
         .collect();
 

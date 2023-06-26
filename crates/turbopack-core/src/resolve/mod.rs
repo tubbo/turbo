@@ -925,7 +925,7 @@ async fn resolve_into_folder(
         match resolve_into_package {
             ResolveIntoPackage::Default(req) => {
                 let str = "./".to_string()
-                    + &*normalize_path(&req).ok_or_else(|| {
+                    + &*normalize_path(req).ok_or_else(|| {
                         anyhow!(
                             "ResolveIntoPackage::Default can't be used with a request that \
                              escapes the current directory"
@@ -1141,13 +1141,15 @@ async fn resolve_import_map_result(
     })
 }
 
+type ResolveImportMapResult = Result<Option<Vc<ResolveResult>>>;
+
 fn resolve_import_map_result_boxed<'a>(
     result: &'a ImportMapResult,
     context: Vc<FileSystemPath>,
     original_context: Vc<FileSystemPath>,
     original_request: Vc<Request>,
     options: Vc<ResolveOptions>,
-) -> Pin<Box<dyn Future<Output = Result<Option<Vc<ResolveResult>>>> + Send + 'a>> {
+) -> Pin<Box<dyn Future<Output = ResolveImportMapResult> + Send + 'a>> {
     Box::pin(async move {
         resolve_import_map_result(result, context, original_context, original_request, options)
             .await

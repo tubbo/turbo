@@ -6,10 +6,9 @@ use turbo_tasks_env::ProcessEnv;
 use turbo_tasks_fs::{FileSystem, FileSystemPath};
 use turbopack::{
     condition::ContextCondition,
-    ecmascript::{CustomTransformer, EcmascriptModuleAsset, TransformPlugin},
+    ecmascript::EcmascriptModuleAsset,
     module_options::{CustomEcmascriptTransformPlugins, JsxTransformOptions, ModuleOptionsContext},
     resolve_options_context::ResolveOptionsContext,
-    transition::TransitionsByName,
     ModuleAssetContext,
 };
 use turbopack_cli_utils::runtime_entry::{RuntimeEntries, RuntimeEntry};
@@ -22,7 +21,7 @@ use turbopack_core::{
     reference_type::{EntryReferenceSubType, ReferenceType},
     resolve::{
         options::{ImportMap, ImportMapping},
-        origin::{PlainResolveOrigin, ResolveOrigin, ResolveOriginExt},
+        origin::{PlainResolveOrigin, ResolveOriginExt},
         parse::Request,
     },
     source_asset::SourceAsset,
@@ -189,7 +188,7 @@ pub fn get_client_compile_time_info(browserslist_query: String) -> Vc<CompileTim
                 dom: true,
                 web_worker: false,
                 service_worker: false,
-                browserslist_query: browserslist_query.to_owned(),
+                browserslist_query,
             }
             .into(),
         )),

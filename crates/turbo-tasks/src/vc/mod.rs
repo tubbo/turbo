@@ -64,6 +64,7 @@ macro_rules! do_not_use_or_you_will_be_fired {
             $(
                 #[doc(hidden)]
                 #[allow(unused)]
+                #[allow(clippy::wrong_self_convention)]
                 #[deprecated = "This is not the method you are looking for."]
                 pub fn $name(self) {}
             )*
@@ -199,7 +200,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            node: self.node.clone(),
+            node: self.node,
             _t: PhantomData,
         }
     }

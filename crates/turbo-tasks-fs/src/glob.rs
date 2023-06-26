@@ -348,7 +348,7 @@ impl TryFrom<&str> for Glob {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Glob::parse(&value)
+        Glob::parse(value)
     }
 }
 

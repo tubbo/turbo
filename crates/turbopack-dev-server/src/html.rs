@@ -11,6 +11,14 @@ use turbopack_core::{
     version::{Version, VersionedContent},
 };
 
+// TODO(WEB-945) This should become a struct once we have a
+// `turbo_tasks::input` attribute macro/`Input` derive macro.
+type DevHtmlEntry = (
+    Vc<Box<dyn ChunkableAsset>>,
+    Vc<Box<dyn ChunkingContext>>,
+    Option<Vc<EvaluatableAssets>>,
+);
+
 /// The HTML entry point of the dev server.
 ///
 /// Generates an HTML page that includes the ES and CSS chunks.
@@ -18,13 +26,7 @@ use turbopack_core::{
 #[derive(Clone)]
 pub struct DevHtmlAsset {
     path: Vc<FileSystemPath>,
-    // TODO(WEB-945) This should become a `Vec<DevHtmlEntry>` once we have a
-    // `turbo_tasks::input` attribute macro/`Input` derive macro.
-    entries: Vec<(
-        Vc<Box<dyn ChunkableAsset>>,
-        Vc<Box<dyn ChunkingContext>>,
-        Option<Vc<EvaluatableAssets>>,
-    )>,
+    entries: Vec<DevHtmlEntry>,
     body: Option<String>,
 }
 
@@ -65,14 +67,7 @@ impl Asset for DevHtmlAsset {
 
 impl DevHtmlAsset {
     /// Create a new dev HTML asset.
-    pub fn new(
-        path: Vc<FileSystemPath>,
-        entries: Vec<(
-            Vc<Box<dyn ChunkableAsset>>,
-            Vc<Box<dyn ChunkingContext>>,
-            Option<Vc<EvaluatableAssets>>,
-        )>,
-    ) -> Vc<Self> {
+    pub fn new(path: Vc<FileSystemPath>, entries: Vec<DevHtmlEntry>) -> Vc<Self> {
         DevHtmlAsset {
             path,
             entries,
@@ -84,11 +79,7 @@ impl DevHtmlAsset {
     /// Create a new dev HTML asset.
     pub fn new_with_body(
         path: Vc<FileSystemPath>,
-        entries: Vec<(
-            Vc<Box<dyn ChunkableAsset>>,
-            Vc<Box<dyn ChunkingContext>>,
-            Option<Vc<EvaluatableAssets>>,
-        )>,
+        entries: Vec<DevHtmlEntry>,
         body: String,
     ) -> Vc<Self> {
         DevHtmlAsset {

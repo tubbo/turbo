@@ -529,7 +529,7 @@ where
             item: chunk_item, ..
         } = node
         {
-            Some(chunk_item.clone())
+            Some(*chunk_item)
         } else {
             None
         };

@@ -43,7 +43,7 @@ impl TaskInput for bool {
     }
 }
 
-impl<'a, T> TaskInput for Vec<T>
+impl<T> TaskInput for Vec<T>
 where
     T: TaskInput,
 {

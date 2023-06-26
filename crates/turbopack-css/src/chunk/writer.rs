@@ -20,8 +20,8 @@ pub async fn expand_imports(
         "".to_string(),
     )];
     let mut external_imports = vec![];
-    let mut imported_chunk_items: HashSet<(String, String, Vc<Box<dyn CssChunkItem>>)> =
-        HashSet::default();
+    type ImportedChunkItemEntry = (String, String, Vc<Box<dyn CssChunkItem>>);
+    let mut imported_chunk_items: HashSet<ImportedChunkItemEntry> = HashSet::default();
     let mut composed_chunk_items: HashSet<Vc<Box<dyn CssChunkItem>>> = HashSet::default();
 
     while let Some((chunk_item, imports, close)) = stack.last_mut() {
@@ -73,10 +73,7 @@ pub async fn expand_imports(
 
                 writeln!(code, "/* {} */", id)?;
                 let content = chunk_item.content().await?;
-                code.push_source(
-                    &content.inner_code,
-                    content.source_map.map(|sm| Vc::upcast(sm)),
-                );
+                code.push_source(&content.inner_code, content.source_map.map(Vc::upcast));
 
                 writeln!(code, "\n{}", close)?;
 

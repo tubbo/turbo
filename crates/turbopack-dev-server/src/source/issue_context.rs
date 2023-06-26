@@ -28,7 +28,7 @@ impl IssueContextContentSource {
     ) -> Vc<Self> {
         IssueContextContentSource {
             context: Some(context),
-            description: description.to_string(),
+            description,
             source,
         }
         .cell()
@@ -38,7 +38,7 @@ impl IssueContextContentSource {
     pub fn new_description(description: String, source: Vc<Box<dyn ContentSource>>) -> Vc<Self> {
         IssueContextContentSource {
             context: None,
-            description: description.to_string(),
+            description,
             source,
         }
         .cell()

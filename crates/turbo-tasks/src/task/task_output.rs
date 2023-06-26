@@ -32,9 +32,7 @@ where
 impl TaskOutput for () {
     type Return = ();
 
-    fn try_from_raw_vc(_raw_vc: RawVc) -> Self::Return {
-        ()
-    }
+    fn try_from_raw_vc(_raw_vc: RawVc) -> Self::Return {}
 
     fn try_into_raw_vc(self) -> Result<RawVc> {
         Ok(unit().node)

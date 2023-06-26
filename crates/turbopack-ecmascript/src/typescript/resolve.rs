@@ -168,8 +168,10 @@ async fn resolve_extends_rooted_or_relative(
     Ok(result)
 }
 
+type Config = (Vc<FileJsonContent>, Vc<Box<dyn Asset>>);
+
 pub async fn read_from_tsconfigs<T>(
-    configs: &[(Vc<FileJsonContent>, Vc<Box<dyn Asset>>)],
+    configs: &[Config],
     accessor: impl Fn(&JsonValue, Vc<Box<dyn Asset>>) -> Option<T>,
 ) -> Result<Option<T>> {
     for (config, source) in configs.iter() {

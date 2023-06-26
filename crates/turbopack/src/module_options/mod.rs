@@ -40,7 +40,7 @@ async fn package_import_map_from_context(
     let mut import_map = ImportMap::default();
     import_map.insert_exact_alias(
         format!("@vercel/turbopack/{}", package_name),
-        ImportMapping::PrimaryAlternative(package_name.to_string(), Some(context_path)).cell(),
+        ImportMapping::PrimaryAlternative(package_name, Some(context_path)).cell(),
     );
     Ok(import_map.cell())
 }

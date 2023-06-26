@@ -68,7 +68,7 @@ where
         Vc::upcast(
             ResolveOriginWithTransition {
                 previous: Vc::upcast(self),
-                transition: transition.to_string(),
+                transition,
             }
             .cell(),
         )

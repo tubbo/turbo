@@ -47,10 +47,7 @@ impl SingleItemCssChunk {
 
         writeln!(code, "/* {} */", id)?;
         let content = this.item.content().await?;
-        code.push_source(
-            &content.inner_code,
-            content.source_map.map(|sm| Vc::upcast(sm)),
-        );
+        code.push_source(&content.inner_code, content.source_map.map(Vc::upcast));
 
         if *this
             .context

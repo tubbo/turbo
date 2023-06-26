@@ -350,6 +350,7 @@ impl CapturedIssues {
     }
 
     /// Returns the number of issues.
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.issues.len()
     }

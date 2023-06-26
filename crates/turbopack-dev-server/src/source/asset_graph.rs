@@ -18,11 +18,13 @@ use super::{ContentSource, ContentSourceContent, ContentSourceData, ContentSourc
 #[turbo_tasks::value(transparent)]
 struct AssetsMap(HashMap<String, Vc<Box<dyn Asset>>>);
 
+type ExpandedState = State<HashSet<Vc<Box<dyn Asset>>>>;
+
 #[turbo_tasks::value(serialization = "none", eq = "manual", cell = "new")]
 pub struct AssetGraphContentSource {
     root_path: Vc<FileSystemPath>,
     root_assets: Vc<AssetsSet>,
-    expanded: Option<State<HashSet<Vc<Box<dyn Asset>>>>>,
+    expanded: Option<ExpandedState>,
 }
 
 #[turbo_tasks::value_impl]
@@ -92,7 +94,7 @@ impl AssetGraphContentSource {
 async fn expand(
     root_assets: &IndexSet<Vc<Box<dyn Asset>>>,
     root_path: &FileSystemPath,
-    expanded: Option<&State<HashSet<Vc<Box<dyn Asset>>>>>,
+    expanded: Option<&ExpandedState>,
 ) -> Result<HashMap<String, Vc<Box<dyn Asset>>>> {
     let mut map = HashMap::new();
     let mut assets = Vec::new();

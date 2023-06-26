@@ -104,7 +104,7 @@ impl EcmascriptChunkItemContent {
             write!(code, "(({{ {} }}) => (() => {{\n\n", args,)?;
         }
 
-        let source_map = this.source_map.map(|sm| Vc::upcast(sm));
+        let source_map = this.source_map.map(Vc::upcast);
         code.push_source(&this.inner_code, source_map);
         if this.options.this {
             code += "\n}.call(this) })";

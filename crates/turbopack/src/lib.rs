@@ -541,9 +541,11 @@ pub async fn emit_asset_into_dir(
     })
 }
 
+type AssetSet = HashSet<Vc<Box<dyn Asset>>>;
+
 #[turbo_tasks::value(shared)]
 struct ReferencesList {
-    referenced_by: HashMap<Vc<Box<dyn Asset>>, HashSet<Vc<Box<dyn Asset>>>>,
+    referenced_by: HashMap<Vc<Box<dyn Asset>>, AssetSet>,
 }
 
 #[turbo_tasks::function]
@@ -557,8 +559,7 @@ async fn compute_back_references(aggregated: Vc<AggregatedGraph>) -> Result<Vc<R
             ReferencesList { referenced_by }.into()
         }
         AggregatedGraphNodeContent::Children(children) => {
-            let mut referenced_by =
-                HashMap::<Vc<Box<dyn Asset>>, HashSet<Vc<Box<dyn Asset>>>>::new();
+            let mut referenced_by = HashMap::<Vc<Box<dyn Asset>>, AssetSet>::new();
             let lists = children
                 .iter()
                 .map(|child| compute_back_references(*child))
