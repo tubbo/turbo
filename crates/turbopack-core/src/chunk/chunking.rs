@@ -1,46 +1,52 @@
-use std::collections::HashSet;
+use std::mem::take;
 
 use anyhow::{bail, Result};
+use indexmap::{IndexMap, IndexSet};
 use turbo_tasks::{
     graph::{GraphTraversal, ReverseTopological},
-    Value, ValueToString,
+    primitives::StringVc,
+    util::FormatIter,
+    TryJoinIterExt, Value, ValueToString, ValueToStringVc,
 };
 
 use super::{
-    availability_info::AvailabilityInfo, ChunkGroupReferenceVc, ChunkItemVc,
-    ChunkableAssetReference, ChunkableAssetReferenceVc, ChunkingContextVc,
+    availability_info::AvailabilityInfo,
+    available_assets::{AvailableAssets, AvailableAssetsVc},
+    ChunkItemVc, ChunkItemsVc, ChunkVc, ChunkableAssetReference, ChunkableAssetReferenceVc,
+    ChunkingContextVc, ChunksVc,
 };
 use crate::{
     asset::{Asset, AssetVc, AssetsVc},
-    chunk::{ChunkItem, ChunkableAsset, ChunkableAssetVc, ChunkingType},
+    chunk::{ChunkItem, ChunkType, ChunkableAsset, ChunkableAssetVc, ChunkingType},
     reference::{AssetReference, AssetReferenceVc},
+    resolve::{ResolveResult, ResolveResultVc},
 };
 
 #[turbo_tasks::value]
 struct ChunkingResult {
     chunk_items: Vec<ChunkItemVc>,
-    available_assets: HashSet<AssetVc>,
-    isolated_parallel_chunk_groups: Vec<AssetVc>,
+    available_assets: AvailableAssetsVc,
+    isolated_parallel_chunk_groups: Vec<ChunkableAssetVc>,
     external_references: Vec<AssetReferenceVc>,
-    async_assets: Vec<AssetVc>,
+    async_assets: Vec<ChunkableAssetVc>,
 }
 
 #[turbo_tasks::function]
 async fn chunking(
     entries: Vec<ChunkableAssetVc>,
-    context: ChunkingContextVc,
+    chunking_context: ChunkingContextVc,
     availability_info: Value<AvailabilityInfo>,
 ) -> Result<ChunkingResultVc> {
     #[derive(Clone, PartialEq, Eq, Hash)]
     enum ResultItem {
         ChunkItem(ChunkItemVc, AssetVc),
         External(AssetReferenceVc),
-        IsolatedParallel(AssetVc),
-        Async(AssetVc),
+        IsolatedParallel(ChunkableAssetVc),
+        Async(ChunkableAssetVc),
     }
     let roots = entries.iter().map(|&asset| {
         ResultItem::ChunkItem(
-            asset.as_chunk_item(context, availability_info),
+            asset.as_chunk_item(chunking_context, availability_info),
             asset.into(),
         )
     });
@@ -74,19 +80,31 @@ async fn chunking(
                                       );
                                   };
                                   results.push(ResultItem::ChunkItem(
-                                      chunkable.as_chunk_item(context, availability_info),
+                                      chunkable.as_chunk_item(chunking_context, availability_info),
                                       chunkable.into(),
                                   ));
                               }
                           }
                           Some(ChunkingType::IsolatedParallel) => {
                               for &asset in &*chunkable.resolve_reference().primary_assets().await? {
-                                  results.push(ResultItem::IsolatedParallel(asset));
+                                  let Some(chunkable) = ChunkableAssetVc::resolve_from(asset).await? else {
+                                      bail!(
+                                          "asset {} must be a ChunkableAsset when it's referenced from a ChunkableAssetReference",
+                                          asset.ident().to_string().await?
+                                      );
+                                  };
+                                  results.push(ResultItem::IsolatedParallel(chunkable));
                               }
                           }
                           Some(ChunkingType::Async) => {
                               for &asset in &*chunkable.resolve_reference().primary_assets().await? {
-                                  results.push(ResultItem::Async(asset));
+                                  let Some(chunkable) = ChunkableAssetVc::resolve_from(asset).await? else {
+                                      bail!(
+                                          "asset {} must be a ChunkableAsset when it's referenced from a ChunkableAssetReference",
+                                          asset.ident().to_string().await?
+                                      );
+                                  };
+                                  results.push(ResultItem::Async(chunkable));
                               }
                           }
                       }
@@ -104,7 +122,7 @@ async fn chunking(
     let mut isolated_parallel_chunk_groups = Vec::new();
     let mut external_references = Vec::new();
     let mut async_assets = Vec::new();
-    let mut available_assets = HashSet::new();
+    let mut available_assets = IndexSet::new();
     for item in results.into_inner().into_iter() {
         match item {
             ResultItem::ChunkItem(chunk_item, asset) => {
@@ -124,7 +142,11 @@ async fn chunking(
     }
     Ok(ChunkingResult {
         chunk_items,
-        available_assets,
+        available_assets: AvailableAssets {
+            parent: availability_info.available_assets(),
+            assets: available_assets,
+        }
+        .cell(),
         isolated_parallel_chunk_groups,
         external_references,
         async_assets,
@@ -132,48 +154,159 @@ async fn chunking(
     .cell())
 }
 
+const NUMBER_OF_CHUNKS_PER_CHUNK_GROUP: usize = 6;
+
 /// Computes the chunks for a chunk group defined by a list of entries in a
 /// specific context and with some availability info. The returned chunks are
 /// optimized based on the optimization ability of the `context`.
+#[turbo_tasks::function]
 async fn chunk_group(
     entries: Vec<ChunkableAssetVc>,
-    context: ChunkingContextVc,
+    chunking_context: ChunkingContextVc,
     availability_info: Value<AvailabilityInfo>,
-) -> Result<AssetsVc> {
+) -> Result<ChunksVc> {
     // Capture all chunk items and other things from the module graph
-    let chunking_result = chunking(entries, context, availability_info).await?;
+    let chunking_result = chunking(entries, chunking_context, availability_info).await?;
 
     // Get innner availablity info
-    let inner_availability_info = todo!();
+    let inner_availability_info = AvailabilityInfo::Inner {
+        available_assets: chunking_result.available_assets,
+    };
 
     // Additional references from the main chunk
     let mut inner_references = Vec::new();
 
     // Async chunk groups
     for &async_chunk_group in chunking_result.async_assets.iter() {
-        inner_references.push(AsyncChunkGroupReferenceVc::new(
-            context,
-            async_chunk_group,
-            inner_availability_info,
-        ));
+        inner_references.push(
+            AsyncChunkGroupReferenceVc::new(
+                vec![async_chunk_group],
+                chunking_context,
+                Value::new(inner_availability_info),
+            )
+            .into(),
+        );
     }
 
-    // Separate chunk groups
-    for &async_chunk_group in chunking_result.async_assets.iter() {
-        inner_references.push(ChunkGroupReferenceVc::new(
-            context,
-            async_chunk_group,
-            inner_availability_info,
-        ));
+    // External references
+    for &external_reference in chunking_result.external_references.iter() {
+        inner_references.push(external_reference);
     }
 
     // Place chunk items in chunks in a smart way
-    let chunks: Vec<AssetVc> = todo!("passing in inner_references");
+    let chunks: Vec<ChunkVc> = make_chunks(
+        &chunking_result.chunk_items,
+        chunking_context,
+        inner_references,
+    )
+    .await?;
 
     // merge parallel chunk groups
-    for chunk_group in todo!("recursive with isolated_parallel_chunk_groups").await? {
-        chunks.extend(chunk_group)
+    for chunk_group in chunking_result
+        .isolated_parallel_chunk_groups
+        .iter()
+        .map(|asset| {
+            chunk_group(
+                vec![asset],
+                chunking_context,
+                Value::new(AvailabilityInfo::Root),
+            )
+        })
+        .try_join()
+        .await?
+    {
+        chunks.extend(chunk_group.iter().copied())
     }
 
     // return chunks
+    Ok(ChunksVc::cell(chunks))
+}
+
+async fn make_chunks(
+    chunk_items: &[ChunkItemVc],
+    chunking_context: ChunkingContextVc,
+    mut main_references: Vec<AssetReferenceVc>,
+) -> Result<Vec<ChunkVc>> {
+    // Sort chunk items by chunk type
+    let mut chunk_items_by_type = IndexMap::new();
+    for chunk_item in chunk_items {
+        let chunk_type = chunk_item.chunk_type().resolve().await?;
+        // TODO ask the chunking_context for further key of splitting
+        chunk_items_by_type
+            .entry(chunk_type)
+            .or_insert_with(Vec::new)
+            .push(chunk_item);
+    }
+
+    // Make chunks
+    let chunks = chunk_items_by_type
+        .into_iter()
+        .map(|(ty, items)| {
+            // This cell call would benefit from keyed_cell
+            let items = ChunkItemsVc::cell(items);
+            ty.create(items, chunking_context, take(&mut main_references))
+        })
+        .collect();
+
+    Ok(chunks)
+}
+
+/// A reference to multiple chunks from a [ChunkGroup]
+#[turbo_tasks::value]
+pub struct AsyncChunkGroupReference {
+    entries: Vec<ChunkableAssetVc>,
+    chunking_context: ChunkingContextVc,
+    availability_info: AvailabilityInfo,
+}
+
+#[turbo_tasks::value_impl]
+impl AsyncChunkGroupReferenceVc {
+    #[turbo_tasks::function]
+    pub fn new(
+        entries: Vec<ChunkableAssetVc>,
+        chunking_context: ChunkingContextVc,
+        availability_info: Value<AvailabilityInfo>,
+    ) -> Self {
+        Self::cell(AsyncChunkGroupReference {
+            entries,
+            chunking_context,
+            availability_info: availability_info.into_value(),
+        })
+    }
+
+    #[turbo_tasks::function]
+    async fn chunk_group(self) -> Result<AssetsVc> {
+        let this = self.await?;
+        Ok(chunk_group(
+            this.entries.clone(),
+            this.chunking_context,
+            Value::new(this.availability_info),
+        ))
+    }
+}
+
+#[turbo_tasks::value_impl]
+impl AssetReference for AsyncChunkGroupReference {
+    #[turbo_tasks::function]
+    async fn resolve_reference(self_vc: AsyncChunkGroupReferenceVc) -> Result<ResolveResultVc> {
+        let set = self_vc.chunk_group().await?.clone_value();
+        Ok(ResolveResult::assets(set).into())
+    }
+}
+
+#[turbo_tasks::value_impl]
+impl ValueToString for AsyncChunkGroupReference {
+    #[turbo_tasks::function]
+    async fn to_string(&self) -> Result<StringVc> {
+        let idents = self
+            .entries
+            .iter()
+            .map(|a| a.ident().to_string())
+            .try_join()
+            .await?;
+        Ok(StringVc::cell(format!(
+            "chunk group ({})",
+            FormatIter(|| idents.iter().map(|s| s.as_str()).intersperse(", "))
+        )))
+    }
 }

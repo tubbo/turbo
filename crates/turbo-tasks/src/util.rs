@@ -149,6 +149,34 @@ impl Display for FormatBytes {
     }
 }
 
+pub struct FormatIter<T: Iterator, F: Fn() -> T>(pub F);
+
+macro_rules! format_iter {
+    ($trait:path) => {
+        impl<T: Iterator, F: Fn() -> T> $trait for FormatIter<T, F>
+        where
+            T::Item: $trait,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                for item in self.0() {
+                    item.fmt(f)?;
+                }
+                Ok(())
+            }
+        }
+    };
+}
+
+format_iter!(std::fmt::Binary);
+format_iter!(std::fmt::Debug);
+format_iter!(std::fmt::Display);
+format_iter!(std::fmt::LowerExp);
+format_iter!(std::fmt::LowerHex);
+format_iter!(std::fmt::Octal);
+format_iter!(std::fmt::Pointer);
+format_iter!(std::fmt::UpperExp);
+format_iter!(std::fmt::UpperHex);
+
 /// Smart pointer that stores data either in an [Arc] or as a static reference.
 pub enum StaticOrArc<T: ?Sized + 'static> {
     Static(&'static T),

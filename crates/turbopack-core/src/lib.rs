@@ -4,6 +4,7 @@
 #![feature(type_alias_impl_trait)]
 #![feature(assert_matches)]
 #![feature(lint_reasons)]
+#![feature(iter_intersperse)]
 
 pub mod asset;
 pub mod changed;

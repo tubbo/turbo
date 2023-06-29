@@ -133,11 +133,6 @@ pub trait Chunk: Asset {
     fn path(&self) -> FileSystemPathVc {
         self.ident().path()
     }
-    /// Returns a list of chunks that should be loaded in parallel to this
-    /// chunk.
-    fn parallel_chunks(&self) -> ChunksVc {
-        ChunksVc::empty()
-    }
 }
 
 /// Aggregated information about a chunk content that can be used by the runtime
@@ -628,7 +623,22 @@ pub trait ChunkItem {
     /// TODO(alexkirsz) This should have a default impl that returns empty
     /// references.
     fn references(&self) -> AssetReferencesVc;
+    /// The [ChunkType] of this [ChunkItem]. This will be used to combine
+    /// multiple chunk items into a chunk of a specific type.
+    fn chunk_type(&self) -> ChunkTypeVc;
 }
 
 #[turbo_tasks::value(transparent)]
 pub struct ChunkItems(Vec<ChunkItemVc>);
+
+#[turbo_tasks::value_trait]
+pub trait ChunkType {
+    /// Create a chunk for this type. All passed chunk items must have this
+    /// chunk type.
+    fn create(
+        &self,
+        chunk_items: ChunkItemsVc,
+        chunking_context: ChunkingContextVc,
+        main_references: Vec<AssetReferenceVc>,
+    ) -> ChunkVc;
+}
