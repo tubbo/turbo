@@ -1,5 +1,6 @@
 pub mod availability_info;
 pub mod available_assets;
+pub mod chunking;
 pub(crate) mod chunking_context;
 pub(crate) mod containment_tree;
 pub(crate) mod data;
@@ -84,12 +85,14 @@ pub struct ModuleIds(Vec<ModuleIdVc>);
 /// An [Asset] that can be converted into a [Chunk].
 #[turbo_tasks::value_trait]
 pub trait ChunkableAsset: Asset {
+    // TODO remove this
     fn as_chunk(
         &self,
         context: ChunkingContextVc,
         availability_info: Value<AvailabilityInfo>,
     ) -> ChunkVc;
 
+    // TODO remove this
     fn as_root_chunk(self_vc: ChunkableAssetVc, context: ChunkingContextVc) -> ChunkVc {
         self_vc.as_chunk(
             context,
@@ -98,6 +101,12 @@ pub trait ChunkableAsset: Asset {
             }),
         )
     }
+
+    fn as_chunk_item(
+        &self,
+        context: ChunkingContextVc,
+        availability_info: Value<AvailabilityInfo>,
+    ) -> ChunkItemVc;
 }
 
 #[turbo_tasks::value(transparent)]
