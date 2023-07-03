@@ -11,7 +11,7 @@ use super::{asset::EcmascriptModulePartAssetVc, part_of_module, split_module};
 use crate::{
     chunk::{
         EcmascriptChunkItem, EcmascriptChunkItemContentVc, EcmascriptChunkItemVc,
-        EcmascriptChunkingContextVc,
+        EcmascriptChunkPlaceable, EcmascriptChunkingContextVc,
     },
     EcmascriptModuleContentVc,
 };
@@ -56,7 +56,13 @@ impl EcmascriptChunkItem for EcmascriptModulePartChunkItem {
             availability_info,
         );
 
-        Ok(EcmascriptChunkItemContentVc::new(content, this.context))
+        let async_module_options = module.full_module.get_async_module_options();
+
+        Ok(EcmascriptChunkItemContentVc::new(
+            content,
+            this.context,
+            async_module_options,
+        ))
     }
 
     #[turbo_tasks::function]

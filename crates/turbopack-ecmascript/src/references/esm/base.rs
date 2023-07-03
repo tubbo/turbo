@@ -5,7 +5,10 @@ use swc_core::{
     ecma::ast::{Expr, ExprStmt, Ident, Lit, Module, ModuleItem, Program, Script, Stmt},
     quote,
 };
-use turbo_tasks::{primitives::StringVc, Value, ValueToString, ValueToStringVc};
+use turbo_tasks::{
+    primitives::{BoolVc, StringVc},
+    Value, ValueToString, ValueToStringVc,
+};
 use turbopack_core::{
     asset::Asset,
     chunk::{
@@ -117,16 +120,6 @@ impl EsmAssetReference {
 #[turbo_tasks::value_impl]
 impl EsmAssetReferenceVc {
     #[turbo_tasks::function]
-    pub(crate) async fn get_referenced_asset(self) -> Result<ReferencedAssetVc> {
-        let this = self.await?;
-
-        Ok(ReferencedAssetVc::from_resolve_result(
-            self.resolve_reference(),
-            this.request,
-        ))
-    }
-
-    #[turbo_tasks::function]
     pub fn new(
         origin: ResolveOriginVc,
         request: RequestVc,
@@ -139,6 +132,31 @@ impl EsmAssetReferenceVc {
             annotations: annotations.into_value(),
             export_name,
         })
+    }
+
+    #[turbo_tasks::function]
+    pub(crate) async fn get_referenced_asset(self) -> Result<ReferencedAssetVc> {
+        let this = self.await?;
+
+        Ok(ReferencedAssetVc::from_resolve_result(
+            self.resolve_reference(),
+            this.request,
+        ))
+    }
+
+    #[turbo_tasks::function]
+    pub(crate) async fn is_async(self) -> Result<BoolVc> {
+        let asset = self.get_referenced_asset().await?;
+
+        let placeable = match &*asset {
+            ReferencedAsset::Some(placeable) => placeable,
+            // TODO(WEB-1259): we need to detect if external modules are esm
+            ReferencedAsset::OriginalReferenceTypeExternal(_) | ReferencedAsset::None => {
+                return Ok(BoolVc::cell(false));
+            }
+        };
+
+        Ok(placeable.get_async_module_options().is_async())
     }
 }
 
