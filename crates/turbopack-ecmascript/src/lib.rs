@@ -413,23 +413,6 @@ impl Asset for EcmascriptModuleAsset {
 #[turbo_tasks::value_impl]
 impl ChunkableAsset for EcmascriptModuleAsset {
     #[turbo_tasks::function]
-    fn as_chunk(
-        self_vc: EcmascriptModuleAssetVc,
-        context: ChunkingContextVc,
-        availability_info: Value<AvailabilityInfo>,
-    ) -> ChunkVc {
-        EcmascriptChunkVc::new(
-            context,
-            self_vc.as_ecmascript_chunk_placeable(),
-            availability_info,
-        )
-        .into()
-    }
-}
-
-#[turbo_tasks::value_impl]
-impl EcmascriptChunkPlaceable for EcmascriptModuleAsset {
-    #[turbo_tasks::function]
     fn as_chunk_item(
         self_vc: EcmascriptModuleAssetVc,
         context: EcmascriptChunkingContextVc,
@@ -439,11 +422,6 @@ impl EcmascriptChunkPlaceable for EcmascriptModuleAsset {
             context,
         })
         .into()
-    }
-
-    #[turbo_tasks::function]
-    async fn get_exports(self_vc: EcmascriptModuleAssetVc) -> Result<EcmascriptExportsVc> {
-        Ok(self_vc.failsafe_analyze().await?.exports)
     }
 }
 
@@ -495,6 +473,11 @@ impl ChunkItem for ModuleChunkItem {
     fn references(&self) -> AssetReferencesVc {
         self.module.references()
     }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        EcmascriptChunkTypeVc::new().into()
+    }
 }
 
 #[turbo_tasks::value_impl]
@@ -517,6 +500,11 @@ impl EcmascriptChunkItem for ModuleChunkItem {
         let this = self_vc.await?;
         let content = this.module.module_content(this.context, availability_info);
         Ok(EcmascriptChunkItemContentVc::new(content, this.context))
+    }
+
+    #[turbo_tasks::function]
+    async fn get_exports(self_vc: EcmascriptModuleAssetVc) -> Result<EcmascriptExportsVc> {
+        Ok(self_vc.failsafe_analyze().await?.exports)
     }
 }
 

@@ -205,21 +205,9 @@ impl ModuleCssAssetVc {
 #[turbo_tasks::value_impl]
 impl ChunkableAsset for ModuleCssAsset {
     #[turbo_tasks::function]
-    fn as_chunk(
-        self_vc: ModuleCssAssetVc,
-        context: ChunkingContextVc,
-        availability_info: Value<AvailabilityInfo>,
-    ) -> ChunkVc {
-        EcmascriptChunkVc::new(context, self_vc.into(), availability_info).into()
-    }
-}
-
-#[turbo_tasks::value_impl]
-impl EcmascriptChunkPlaceable for ModuleCssAsset {
-    #[turbo_tasks::function]
     fn as_chunk_item(
         self_vc: ModuleCssAssetVc,
-        context: EcmascriptChunkingContextVc,
+        context: ChunkingContextVc,
     ) -> EcmascriptChunkItemVc {
         ModuleChunkItem {
             context,
@@ -227,11 +215,6 @@ impl EcmascriptChunkPlaceable for ModuleCssAsset {
         }
         .cell()
         .into()
-    }
-
-    #[turbo_tasks::function]
-    fn get_exports(&self) -> EcmascriptExportsVc {
-        EcmascriptExports::Value.cell()
     }
 }
 
@@ -251,7 +234,7 @@ impl ResolveOrigin for ModuleCssAsset {
 #[turbo_tasks::value]
 struct ModuleChunkItem {
     module: ModuleCssAssetVc,
-    context: EcmascriptChunkingContextVc,
+    context: ChunkingContextVc,
 }
 
 #[turbo_tasks::value_impl]
@@ -264,6 +247,11 @@ impl ChunkItem for ModuleChunkItem {
     #[turbo_tasks::function]
     fn references(&self) -> AssetReferencesVc {
         self.module.references()
+    }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        EcmascriptChunkTypeVc::new().into()
     }
 }
 
@@ -356,6 +344,11 @@ impl EcmascriptChunkItem for ModuleChunkItem {
             ..Default::default()
         }
         .cell())
+    }
+
+    #[turbo_tasks::function]
+    fn get_exports(&self) -> EcmascriptExportsVc {
+        EcmascriptExports::Value.cell()
     }
 }
 

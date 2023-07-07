@@ -6,11 +6,7 @@ use turbo_tasks::{
 };
 use turbo_tasks_hash::Xxh3Hash64Hasher;
 
-use super::ChunkableAssetReference;
-use crate::{
-    asset::{Asset, AssetVc},
-    reference::AssetReference,
-};
+use crate::asset::{Asset, AssetVc};
 
 /// Allows to gather information about which assets are already available.
 /// Adding more roots will form a linked list like structure to allow caching

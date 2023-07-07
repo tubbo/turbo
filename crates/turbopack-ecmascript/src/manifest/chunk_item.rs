@@ -67,6 +67,11 @@ impl EcmascriptChunkItem for ManifestChunkItem {
         }
         .into())
     }
+
+    #[turbo_tasks::function]
+    fn get_exports(&self) -> EcmascriptExportsVc {
+        EcmascriptExports::Value.cell()
+    }
 }
 
 #[turbo_tasks::value_impl]
@@ -86,5 +91,10 @@ impl ChunkItem for ManifestChunkItem {
         }
 
         Ok(AssetReferencesVc::cell(references))
+    }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        EcmascriptChunkTypeVc::new().into()
     }
 }

@@ -168,6 +168,11 @@ impl ChunkItem for CssModuleChunkItem {
     fn references(&self) -> AssetReferencesVc {
         self.module.references()
     }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        CssChunkTypeVc::new().into()
+    }
 }
 
 #[turbo_tasks::value_impl]

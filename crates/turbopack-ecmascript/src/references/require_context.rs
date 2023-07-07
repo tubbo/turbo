@@ -380,27 +380,10 @@ impl Asset for RequireContextAsset {
 #[turbo_tasks::value_impl]
 impl ChunkableAsset for RequireContextAsset {
     #[turbo_tasks::function]
-    fn as_chunk(
-        self_vc: ChunkGroupFilesAssetVc,
-        context: ChunkingContextVc,
-        availability_info: Value<AvailabilityInfo>,
-    ) -> ChunkVc {
-        EcmascriptChunkVc::new(
-            context,
-            self_vc.as_ecmascript_chunk_placeable(),
-            availability_info,
-        )
-        .into()
-    }
-}
-
-#[turbo_tasks::value_impl]
-impl EcmascriptChunkPlaceable for RequireContextAsset {
-    #[turbo_tasks::function]
     async fn as_chunk_item(
         self_vc: RequireContextAssetVc,
-        context: EcmascriptChunkingContextVc,
-    ) -> Result<EcmascriptChunkItemVc> {
+        context: ChunkingContextVc,
+    ) -> Result<ChunkItemVc> {
         let this = self_vc.await?;
         Ok(RequireContextChunkItem {
             context,
@@ -411,11 +394,6 @@ impl EcmascriptChunkPlaceable for RequireContextAsset {
         }
         .cell()
         .into())
-    }
-
-    #[turbo_tasks::function]
-    fn get_exports(&self) -> EcmascriptExportsVc {
-        EcmascriptExports::Value.cell()
     }
 }
 
@@ -509,6 +487,11 @@ impl EcmascriptChunkItem for RequireContextChunkItem {
         }
         .cell())
     }
+
+    #[turbo_tasks::function]
+    fn get_exports(&self) -> EcmascriptExportsVc {
+        EcmascriptExports::Value.cell()
+    }
 }
 
 #[turbo_tasks::value_impl]
@@ -521,5 +504,10 @@ impl ChunkItem for RequireContextChunkItem {
     #[turbo_tasks::function]
     fn references(&self) -> AssetReferencesVc {
         self.inner.references()
+    }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        EcmascriptChunkTypeVc::new().into()
     }
 }

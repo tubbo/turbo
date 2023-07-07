@@ -61,37 +61,13 @@ impl Asset for JsonModuleAsset {
 #[turbo_tasks::value_impl]
 impl ChunkableAsset for JsonModuleAsset {
     #[turbo_tasks::function]
-    fn as_chunk(
-        self_vc: JsonModuleAssetVc,
-        context: ChunkingContextVc,
-        availability_info: Value<AvailabilityInfo>,
-    ) -> ChunkVc {
-        EcmascriptChunkVc::new(
-            context,
-            self_vc.as_ecmascript_chunk_placeable(),
-            availability_info,
-        )
-        .into()
-    }
-}
-
-#[turbo_tasks::value_impl]
-impl EcmascriptChunkPlaceable for JsonModuleAsset {
-    #[turbo_tasks::function]
-    fn as_chunk_item(
-        self_vc: JsonModuleAssetVc,
-        context: EcmascriptChunkingContextVc,
-    ) -> EcmascriptChunkItemVc {
-        JsonChunkItemVc::cell(JsonChunkItem {
+    fn as_chunk_item(self_vc: JsonModuleAssetVc, context: ChunkingContextVc) -> ChunkItemVc {
+        JsonChunkItem {
             module: self_vc,
             context,
-        })
+        }
+        .cell()
         .into()
-    }
-
-    #[turbo_tasks::function]
-    fn get_exports(&self) -> EcmascriptExportsVc {
-        EcmascriptExports::Value.cell()
     }
 }
 
@@ -111,6 +87,11 @@ impl ChunkItem for JsonChunkItem {
     #[turbo_tasks::function]
     fn references(&self) -> AssetReferencesVc {
         self.module.references()
+    }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        EcmascriptChunkTypeVc::new().into()
     }
 }
 
@@ -157,6 +138,11 @@ impl EcmascriptChunkItem for JsonChunkItem {
                 );
             }
         }
+    }
+
+    #[turbo_tasks::function]
+    fn get_exports(&self) -> EcmascriptExportsVc {
+        EcmascriptExports::Value.cell()
     }
 }
 

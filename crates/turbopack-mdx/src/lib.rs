@@ -184,37 +184,13 @@ impl Asset for MdxModuleAsset {
 #[turbo_tasks::value_impl]
 impl ChunkableAsset for MdxModuleAsset {
     #[turbo_tasks::function]
-    fn as_chunk(
-        self_vc: MdxModuleAssetVc,
-        context: ChunkingContextVc,
-        availability_info: Value<AvailabilityInfo>,
-    ) -> ChunkVc {
-        EcmascriptChunkVc::new(
-            context,
-            self_vc.as_ecmascript_chunk_placeable(),
-            availability_info,
-        )
-        .into()
-    }
-}
-
-#[turbo_tasks::value_impl]
-impl EcmascriptChunkPlaceable for MdxModuleAsset {
-    #[turbo_tasks::function]
-    fn as_chunk_item(
-        self_vc: MdxModuleAssetVc,
-        context: EcmascriptChunkingContextVc,
-    ) -> EcmascriptChunkItemVc {
-        MdxChunkItemVc::cell(MdxChunkItem {
+    fn as_chunk_item(self_vc: MdxModuleAssetVc, context: ChunkingContextVc) -> ChunkItemVc {
+        MdxChunkItem {
             module: self_vc,
             context,
-        })
+        }
+        .cell()
         .into()
-    }
-
-    #[turbo_tasks::function]
-    fn get_exports(&self) -> EcmascriptExportsVc {
-        EcmascriptExports::Value.cell()
     }
 }
 
@@ -248,6 +224,11 @@ impl ChunkItem for MdxChunkItem {
     fn references(&self) -> AssetReferencesVc {
         self.module.references()
     }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        EcmascriptChunkTypeVc::new().into()
+    }
 }
 
 #[turbo_tasks::value_impl]
@@ -265,6 +246,11 @@ impl EcmascriptChunkItem for MdxChunkItem {
             .await?
             .as_chunk_item(self.context)
             .content())
+    }
+
+    #[turbo_tasks::function]
+    fn get_exports(&self) -> EcmascriptExportsVc {
+        EcmascriptExports::Value.cell()
     }
 }
 

@@ -94,6 +94,11 @@ impl ChunkItem for ManifestLoaderItem {
 
         Ok(AssetReferencesVc::cell(references))
     }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        EcmascriptChunkTypeVc::new().into()
+    }
 }
 
 #[turbo_tasks::value_impl]

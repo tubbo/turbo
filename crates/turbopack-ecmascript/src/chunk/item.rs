@@ -147,6 +147,15 @@ pub trait EcmascriptChunkItem: ChunkItem {
         self.content()
     }
     fn chunking_context(&self) -> EcmascriptChunkingContextVc;
+    fn get_exports(&self) -> EcmascriptExportsVc;
+}
+
+#[turbo_tasks::value(shared)]
+pub enum EcmascriptExports {
+    EsmExports(EsmExportsVc),
+    CommonJs,
+    Value,
+    None,
 }
 
 #[turbo_tasks::value_impl]

@@ -108,7 +108,7 @@ impl Asset for EcmascriptModulePartAsset {
 }
 
 #[turbo_tasks::value_impl]
-impl EcmascriptChunkPlaceable for EcmascriptModulePartAsset {
+impl ChunkableAsset for EcmascriptModulePartAsset {
     #[turbo_tasks::function]
     async fn as_chunk_item(
         self_vc: EcmascriptModulePartAssetVc,
@@ -120,28 +120,6 @@ impl EcmascriptChunkPlaceable for EcmascriptModulePartAsset {
         }
         .cell()
         .into())
-    }
-
-    #[turbo_tasks::function]
-    async fn get_exports(self_vc: EcmascriptModuleAssetVc) -> Result<EcmascriptExportsVc> {
-        Ok(self_vc.analyze().await?.exports)
-    }
-}
-
-#[turbo_tasks::value_impl]
-impl ChunkableAsset for EcmascriptModulePartAsset {
-    #[turbo_tasks::function]
-    async fn as_chunk(
-        self_vc: EcmascriptModulePartAssetVc,
-        context: ChunkingContextVc,
-        availability_info: Value<AvailabilityInfo>,
-    ) -> ChunkVc {
-        EcmascriptChunkVc::new(
-            context,
-            self_vc.as_ecmascript_chunk_placeable(),
-            availability_info,
-        )
-        .into()
     }
 }
 

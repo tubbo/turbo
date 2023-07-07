@@ -23,17 +23,6 @@ pub struct EcmascriptChunkContent {
     pub availability_info: AvailabilityInfo,
 }
 
-impl From<ChunkContentResult<EcmascriptChunkItemVc>> for EcmascriptChunkContent {
-    fn from(from: ChunkContentResult<EcmascriptChunkItemVc>) -> Self {
-        EcmascriptChunkContent {
-            chunk_items: from.chunk_items,
-            chunks: from.chunks,
-            external_asset_references: from.external_asset_references,
-            availability_info: from.availability_info,
-        }
-    }
-}
-
 #[turbo_tasks::value_impl]
 impl EcmascriptChunkContentVc {
     #[turbo_tasks::function]

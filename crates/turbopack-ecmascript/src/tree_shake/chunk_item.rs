@@ -28,6 +28,11 @@ pub struct EcmascriptModulePartChunkItem {
 #[turbo_tasks::value_impl]
 impl EcmascriptChunkItem for EcmascriptModulePartChunkItem {
     #[turbo_tasks::function]
+    fn chunking_context(&self) -> EcmascriptChunkingContextVc {
+        self.context
+    }
+
+    #[turbo_tasks::function]
     fn content(self_vc: EcmascriptModulePartChunkItemVc) -> EcmascriptChunkItemContentVc {
         self_vc.content_with_availability_info(Value::new(AvailabilityInfo::Untracked))
     }
@@ -60,8 +65,8 @@ impl EcmascriptChunkItem for EcmascriptModulePartChunkItem {
     }
 
     #[turbo_tasks::function]
-    fn chunking_context(&self) -> EcmascriptChunkingContextVc {
-        self.context
+    async fn get_exports(&self) -> Result<EcmascriptExportsVc> {
+        Ok(self.module.analyze().await?.exports)
     }
 }
 
@@ -75,5 +80,10 @@ impl ChunkItem for EcmascriptModulePartChunkItem {
     #[turbo_tasks::function]
     async fn asset_ident(&self) -> Result<AssetIdentVc> {
         Ok(self.module.ident())
+    }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        EcmascriptChunkTypeVc::new().into()
     }
 }

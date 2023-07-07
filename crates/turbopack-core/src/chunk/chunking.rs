@@ -16,7 +16,7 @@ use super::{
     ChunkingContextVc, ChunksVc,
 };
 use crate::{
-    asset::{Asset, AssetVc, AssetsVc},
+    asset::{Asset, AssetVc},
     chunk::{ChunkItem, ChunkType, ChunkableAsset, ChunkableAssetVc, ChunkingType},
     reference::{AssetReference, AssetReferenceVc},
     resolve::{ResolveResult, ResolveResultVc},
@@ -194,7 +194,7 @@ async fn chunk_group(
     }
 
     // Place chunk items in chunks in a smart way
-    let chunks: Vec<ChunkVc> = make_chunks(
+    let mut chunks: Vec<ChunkVc> = make_chunks(
         &chunking_result.chunk_items,
         chunking_context,
         inner_references,
@@ -205,7 +205,7 @@ async fn chunk_group(
     for chunk_group in chunking_result
         .isolated_parallel_chunk_groups
         .iter()
-        .map(|asset| {
+        .map(|&asset| {
             chunk_group(
                 vec![asset],
                 chunking_context,
@@ -229,7 +229,7 @@ async fn make_chunks(
 ) -> Result<Vec<ChunkVc>> {
     // Sort chunk items by chunk type
     let mut chunk_items_by_type = IndexMap::new();
-    for chunk_item in chunk_items {
+    for &chunk_item in chunk_items {
         let chunk_type = chunk_item.chunk_type().resolve().await?;
         // TODO ask the chunking_context for further key of splitting
         chunk_items_by_type
@@ -275,7 +275,7 @@ impl AsyncChunkGroupReferenceVc {
     }
 
     #[turbo_tasks::function]
-    async fn chunk_group(self) -> Result<AssetsVc> {
+    async fn chunk_group(self) -> Result<ChunksVc> {
         let this = self.await?;
         Ok(chunk_group(
             this.entries.clone(),
@@ -289,7 +289,12 @@ impl AsyncChunkGroupReferenceVc {
 impl AssetReference for AsyncChunkGroupReference {
     #[turbo_tasks::function]
     async fn resolve_reference(self_vc: AsyncChunkGroupReferenceVc) -> Result<ResolveResultVc> {
-        let set = self_vc.chunk_group().await?.clone_value();
+        let set = self_vc
+            .chunk_group()
+            .await?
+            .iter()
+            .map(|&c| c.into())
+            .collect();
         Ok(ResolveResult::assets(set).into())
     }
 }

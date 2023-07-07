@@ -25,7 +25,7 @@ pub trait ChunkingContext {
     // discretion of chunking context implementors. However, we currently use this
     // in a couple of places in `turbopack-css`, so we need to remove that
     // dependency first.
-    fn chunk_path(&self, ident: AssetIdentVc, extension: &str) -> FileSystemPathVc;
+    fn chunk_path(&self, ident: StringVc, extension: &str) -> FileSystemPathVc;
 
     // TODO(alexkirsz) Remove this from the chunking context.
     /// Reference Source Map Assets for chunks

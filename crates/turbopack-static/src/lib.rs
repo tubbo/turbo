@@ -82,38 +82,14 @@ impl Asset for StaticModuleAsset {
 #[turbo_tasks::value_impl]
 impl ChunkableAsset for StaticModuleAsset {
     #[turbo_tasks::function]
-    fn as_chunk(
-        self_vc: StaticModuleAssetVc,
-        context: ChunkingContextVc,
-        availability_info: Value<AvailabilityInfo>,
-    ) -> ChunkVc {
-        EcmascriptChunkVc::new(
-            context,
-            self_vc.as_ecmascript_chunk_placeable(),
-            availability_info,
-        )
-        .into()
-    }
-}
-
-#[turbo_tasks::value_impl]
-impl EcmascriptChunkPlaceable for StaticModuleAsset {
-    #[turbo_tasks::function]
-    fn as_chunk_item(
-        self_vc: StaticModuleAssetVc,
-        context: EcmascriptChunkingContextVc,
-    ) -> EcmascriptChunkItemVc {
-        ModuleChunkItemVc::cell(ModuleChunkItem {
+    fn as_chunk_item(self_vc: StaticModuleAssetVc, context: ChunkingContextVc) -> ChunkItemVc {
+        ModuleChunkItem {
             module: self_vc,
             context,
             static_asset: self_vc.static_asset(context.into()),
-        })
+        }
+        .cell()
         .into()
-    }
-
-    #[turbo_tasks::function]
-    fn get_exports(&self) -> EcmascriptExportsVc {
-        EcmascriptExports::Value.into()
     }
 }
 
@@ -186,6 +162,11 @@ impl ChunkItem for ModuleChunkItem {
         )
         .into()]))
     }
+
+    #[turbo_tasks::function]
+    fn chunk_type(&self) -> ChunkTypeVc {
+        EcmascriptChunkTypeVc::new().into()
+    }
 }
 
 #[turbo_tasks::value_impl]
@@ -209,6 +190,11 @@ impl EcmascriptChunkItem for ModuleChunkItem {
             ..Default::default()
         }
         .into())
+    }
+
+    #[turbo_tasks::function]
+    fn get_exports(&self) -> EcmascriptExportsVc {
+        EcmascriptExports::Value.into()
     }
 }
 
