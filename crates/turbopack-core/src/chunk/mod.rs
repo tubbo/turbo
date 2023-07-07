@@ -9,27 +9,22 @@ pub mod optimize;
 pub(crate) mod passthrough_asset;
 
 use std::{
-    collections::HashSet,
     fmt::{Debug, Display, Write},
     future::Future,
     hash::Hash,
-    marker::PhantomData,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use tracing::{info_span, Span};
 use turbo_tasks::{
     debug::ValueDebugFormat,
-    graph::{AdjacencyMap, GraphTraversal, GraphTraversalResult, Visit, VisitControlFlow},
-    primitives::{StringReadRef, StringVc},
+    graph::{GraphTraversal, Visit},
+    primitives::StringVc,
     trace::TraceRawVcs,
-    TryJoinIterExt, Value, ValueToString, ValueToStringVc,
+    TryJoinIterExt, ValueToString, ValueToStringVc,
 };
-use turbo_tasks_fs::FileSystemPathVc;
 use turbo_tasks_hash::DeterministicHash;
 
-use self::availability_info::AvailabilityInfo;
 pub use self::{
     chunking_context::{ChunkingContext, ChunkingContextVc},
     data::{ChunkData, ChunkDataOption, ChunkDataOptionVc, ChunkDataVc, ChunksData, ChunksDataVc},
@@ -44,7 +39,6 @@ use crate::{
         IntrospectableVc,
     },
     reference::{AssetReference, AssetReferenceVc, AssetReferencesVc},
-    resolve::{PrimaryResolveResult, ResolveResult, ResolveResultVc},
 };
 
 /// A module id, which can be a number or string
@@ -92,6 +86,42 @@ pub trait ChunkableAsset: Asset {
     fn as_chunk_item(&self, context: ChunkingContextVc) -> ChunkItemVc;
 }
 
+#[turbo_tasks::value]
+pub struct ChunkIdent {
+    pub entry_asset_ident: AssetIdentVc,
+    pub available_assets_hash: String,
+    pub split_piece: String,
+}
+
+#[turbo_tasks::value_impl]
+impl ChunkIdentVc {
+    #[turbo_tasks::function]
+    pub fn new(
+        entry_asset_ident: AssetIdentVc,
+        available_assets_hash: StringVc,
+        split_piece: StringVc,
+    ) -> ChunkIdentVc {
+        Self::cell(ChunkIdent {
+            entry_asset_ident,
+            available_assets_hash: available_assets_hash.into(),
+            split_piece: split_piece.into(),
+        })
+    }
+}
+
+#[turbo_tasks::value_impl]
+impl ValueToString for ChunkIdent {
+    #[turbo_tasks::function]
+    async fn to_string(&self) -> Result<StringVc> {
+        Ok(StringVc::cell(format!(
+            "{}-{}-{}",
+            self.available_assets_hash,
+            self.entry_asset_ident.to_string().await?,
+            self.split_piece
+        )))
+    }
+}
+
 #[turbo_tasks::value(transparent)]
 pub struct Chunks(Vec<ChunkVc>);
 
@@ -112,11 +142,19 @@ pub struct Chunk {
     pub chunking_context: ChunkingContextVc,
     /// An identifier of the chunk to make it uniquely identifiable. This is the
     /// source of creating a chunk id and chunk filename.
-    pub ident: AssetIdentVc,
+    pub ident: ChunkIdentVc,
     /// All the items in the chunk
     pub items: ChunkItemsVc,
     /// Chunk external references of all chunk items of the whole chunk group.
     pub references: AssetReferencesVc,
+}
+
+#[turbo_tasks::value_impl]
+impl ChunkVc {
+    #[turbo_tasks::function]
+    pub async fn ident(self) -> Result<ChunkIdentVc> {
+        Ok(self.await?.ident)
+    }
 }
 
 #[turbo_tasks::function]

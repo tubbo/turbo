@@ -3,7 +3,7 @@ use std::mem::take;
 use anyhow::{bail, Result};
 use indexmap::{IndexMap, IndexSet};
 use turbo_tasks::{
-    graph::{GraphTraversal, ReverseTopological},
+    graph::{AdjacencyMap, GraphTraversal},
     primitives::StringVc,
     util::FormatIter,
     TryJoinIterExt, Value, ValueToString, ValueToStringVc,
@@ -12,12 +12,13 @@ use turbo_tasks::{
 use super::{
     availability_info::AvailabilityInfo,
     available_assets::{AvailableAssets, AvailableAssetsVc},
-    ChunkItemVc, ChunkItemsVc, ChunkVc, ChunkableAssetReference, ChunkableAssetReferenceVc,
-    ChunkingContextVc, ChunksVc,
+    Chunk, ChunkIdentVc, ChunkItemVc, ChunkItemsVc, ChunkVc, ChunkableAssetReference,
+    ChunkableAssetReferenceVc, ChunkingContextVc, ChunksVc,
 };
 use crate::{
     asset::{Asset, AssetVc},
     chunk::{ChunkItem, ChunkType, ChunkableAsset, ChunkableAssetVc, ChunkingType},
+    ident::AssetIdentVc,
     reference::{AssetReference, AssetReferenceVc},
     resolve::{ResolveResult, ResolveResultVc},
 };
@@ -50,7 +51,7 @@ async fn chunking(
             asset.into(),
         )
     });
-    let results = ReverseTopological::new()
+    let results = AdjacencyMap::new()
         .skip_duplicates()
         .visit(roots, |result: &ResultItem| {
           let chunk_item = if let &ResultItem::ChunkItem(chunk_item, _) = result {
@@ -223,6 +224,7 @@ async fn chunk_group(
 }
 
 async fn make_chunks(
+    entry_ident: AssetIdentVc,
     chunk_items: &[ChunkItemVc],
     chunking_context: ChunkingContextVc,
     mut main_references: Vec<AssetReferenceVc>,
@@ -244,7 +246,15 @@ async fn make_chunks(
         .map(|(ty, items)| {
             // This cell call would benefit from keyed_cell
             let items = ChunkItemsVc::cell(items);
-            ty.create(items, chunking_context, take(&mut main_references))
+            let ident = ChunkIdentVc::new(entry_ident, ty, "");
+            Chunk {
+                ty,
+                chunking_context,
+                ident,
+                items,
+                references: take(&mut main_references),
+            }
+            .cell()
         })
         .collect();
 
