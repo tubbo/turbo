@@ -36,7 +36,7 @@ use turbopack_core::{
     reference_type::{EntryReferenceSubType, ReferenceType},
 };
 use turbopack_dev::DevChunkingContextVc;
-use turbopack_node::evaluate::evaluate;
+use turbopack_node::{debug::should_debug, evaluate::evaluate};
 use turbopack_test_utils::jest::JestRunResult;
 
 use crate::util::REPO_ROOT;
@@ -265,16 +265,20 @@ async fn run_test(resource: &str) -> Result<RunTestResultVc> {
         ])),
         vec![],
         CompletionVc::immutable(),
-        false,
+        should_debug("execution_test"),
     )
     .await?;
 
-    let SingleValue::Single(bytes) = res
+    let single = res
         .try_into_single()
         .await
-        .context("test node result did not emit anything")?
-    else {
-        panic!("Evaluation stream must yield SingleValue.");
+        .context("test node result did not emit anything")?;
+
+    let SingleValue::Single(bytes) = single else {
+        panic!(
+            "Evaluation stream must yield SingleValue, but got: {:?}",
+            single
+        );
     };
 
     Ok(RunTestResult {

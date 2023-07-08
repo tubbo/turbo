@@ -6,14 +6,14 @@ use turbopack_core::{
 };
 
 use super::{item::EcmascriptChunkItemVc, EcmascriptChunkingContextVc};
-use crate::references::{async_module::OptionAsyncModuleOptionsVc, esm::EsmExportsVc};
+use crate::references::{async_module::OptionAsyncModuleVc, esm::EsmExportsVc};
 
 #[turbo_tasks::value_trait]
 pub trait EcmascriptChunkPlaceable: ChunkableModule + Module + Asset {
     fn as_chunk_item(&self, context: EcmascriptChunkingContextVc) -> EcmascriptChunkItemVc;
     fn get_exports(&self) -> EcmascriptExportsVc;
-    fn get_async_module_options(&self) -> OptionAsyncModuleOptionsVc {
-        OptionAsyncModuleOptionsVc::cell(None)
+    fn get_async_module(&self) -> OptionAsyncModuleVc {
+        OptionAsyncModuleVc::none()
     }
 }
 

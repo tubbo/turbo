@@ -145,18 +145,19 @@ impl EsmAssetReferenceVc {
     }
 
     #[turbo_tasks::function]
-    pub(crate) async fn is_async(self) -> Result<BoolVc> {
+    pub(crate) async fn is_async(self, recursive: bool) -> Result<BoolVc> {
         let asset = self.get_referenced_asset().await?;
 
-        let placeable = match &*asset {
-            ReferencedAsset::Some(placeable) => placeable,
-            // TODO(WEB-1259): we need to detect if external modules are esm
-            ReferencedAsset::OriginalReferenceTypeExternal(_) | ReferencedAsset::None => {
-                return Ok(BoolVc::cell(false));
+        match &*asset {
+            ReferencedAsset::Some(placeable) if recursive => {
+                Ok(placeable.get_async_module().is_async())
             }
-        };
-
-        Ok(placeable.get_async_module_options().is_async())
+            ReferencedAsset::OriginalReferenceTypeExternal(_) => {
+                // TODO(WEB-1259): we need to detect if external modules are esm
+                Ok(BoolVc::cell(false))
+            }
+            ReferencedAsset::Some(_) | ReferencedAsset::None => Ok(BoolVc::cell(false)),
+        }
     }
 }
 
