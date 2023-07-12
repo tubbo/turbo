@@ -30,6 +30,15 @@ impl AssetsVc {
     }
 }
 
+#[turbo_tasks::value_impl]
+impl AssetsSetVc {
+    /// Creates an empty set of [Asset]s
+    #[turbo_tasks::function]
+    pub fn empty() -> Self {
+        AssetsSetVc::cell(IndexSet::new())
+    }
+}
+
 /// An asset. It also forms a graph when following [Asset::references].
 #[turbo_tasks::value_trait]
 pub trait Asset {

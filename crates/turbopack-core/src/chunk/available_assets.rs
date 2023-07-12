@@ -82,7 +82,7 @@ impl AvailableAssetsVc {
 }
 
 #[turbo_tasks::function]
-async fn chunkable_assets_set(root: AssetVc) -> Result<AssetsSetVc> {
+pub async fn chunkable_assets_set(root: AssetVc) -> Result<AssetsSetVc> {
     let assets = AdjacencyMap::new()
         .skip_duplicates()
         .visit(once(root), |&asset: &AssetVc| async move {

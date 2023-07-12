@@ -117,7 +117,7 @@ impl EsmAssetReference {
 #[turbo_tasks::value_impl]
 impl EsmAssetReferenceVc {
     #[turbo_tasks::function]
-    pub(super) async fn get_referenced_asset(self) -> Result<ReferencedAssetVc> {
+    pub(crate) async fn get_referenced_asset(self) -> Result<ReferencedAssetVc> {
         let this = self.await?;
 
         Ok(ReferencedAssetVc::from_resolve_result(
