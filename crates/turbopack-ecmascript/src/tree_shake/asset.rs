@@ -161,18 +161,8 @@ impl EcmascriptModulePartAssetVc {
 
 #[turbo_tasks::function]
 async fn analyze(
-    full_module: EcmascriptModuleAssetVc,
+    module: EcmascriptModuleAssetVc,
     part: ModulePartVc,
 ) -> Result<AnalyzeEcmascriptModuleResultVc> {
-    let module = full_module.await?;
-
-    Ok(analyze_ecmascript_module(
-        module.source,
-        full_module.as_resolve_origin(),
-        Value::new(module.ty),
-        module.transforms,
-        Value::new(module.options),
-        module.compile_time_info,
-        Some(part),
-    ))
+    Ok(analyze_ecmascript_module(module, Some(part)))
 }

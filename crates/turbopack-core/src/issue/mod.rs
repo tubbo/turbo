@@ -356,8 +356,8 @@ pub struct Issues(Vec<IssueVc>);
 
 /// A list of issues captured with [`IssueVc::peek_issues_with_path`] and
 /// [`IssueVc::take_issues_with_path`].
-#[derive(Debug)]
 #[turbo_tasks::value]
+#[derive(Debug)]
 pub struct CapturedIssues {
     issues: AutoSet<IssueVc>,
     #[cfg(feature = "issue_path")]

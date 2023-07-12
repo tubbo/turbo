@@ -9513,6 +9513,7 @@ dependencies = [
  "turbo-tasks-build",
  "turbo-tasks-fs",
  "turbo-tasks-hash",
+ "turbopack-cli-utils",
  "turbopack-core",
 ]
 
@@ -9536,6 +9537,7 @@ dependencies = [
  "turbo-tasks-memory",
  "turbopack",
  "turbopack-build",
+ "turbopack-cli-utils",
  "turbopack-core",
  "turbopack-dev",
  "turbopack-ecmascript-plugins",

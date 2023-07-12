@@ -1,10 +1,11 @@
-use std::ops::Deref;
+use std::{future::IntoFuture, ops::Deref};
 
 use anyhow::Result;
 use auto_hash_map::AutoSet;
+use futures::TryFutureExt;
 use turbo_tasks::debug::ValueDebugFormat;
 
-use crate::{self as turbo_tasks, RawVc, ValueToString, ValueToStringVc};
+use crate::{self as turbo_tasks, RawVc, TryJoinIterExt, ValueToString, ValueToStringVc};
 
 #[turbo_tasks::value(transparent)]
 pub struct String(std::string::String);
@@ -64,6 +65,47 @@ impl StringsVc {
 
 #[turbo_tasks::value(transparent)]
 pub struct Bool(bool);
+
+#[turbo_tasks::value(transparent)]
+pub struct Bools(Vec<bool>);
+
+#[turbo_tasks::value(transparent)]
+pub struct BoolVcs(Vec<BoolVc>);
+
+#[turbo_tasks::value_impl]
+impl BoolVcsVc {
+    #[turbo_tasks::function]
+    pub fn empty() -> Self {
+        Self::cell(Vec::new())
+    }
+
+    #[turbo_tasks::function]
+    async fn into_bools(self) -> Result<BoolsVc> {
+        let this = self.await?;
+
+        let bools = this
+            .iter()
+            .map(|b| b.into_future().map_ok(|b| *b))
+            .try_join()
+            .await?;
+
+        Ok(BoolsVc::cell(bools))
+    }
+
+    #[turbo_tasks::function]
+    pub async fn all(self) -> Result<BoolVc> {
+        let bools = self.into_bools().await?;
+
+        Ok(BoolVc::cell(bools.iter().all(|b| *b)))
+    }
+
+    #[turbo_tasks::function]
+    pub async fn any(self) -> Result<BoolVc> {
+        let bools = self.into_bools().await?;
+
+        Ok(BoolVc::cell(bools.iter().any(|b| *b)))
+    }
+}
 
 #[turbo_tasks::value(transparent)]
 pub struct Usize(usize);

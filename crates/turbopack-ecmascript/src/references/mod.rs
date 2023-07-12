@@ -131,7 +131,8 @@ use crate::{
     resolve::try_to_severity,
     tree_shake::{part_of_module, split},
     typescript::resolve::tsconfig,
-    EcmascriptInputTransformsVc, EcmascriptOptions, SpecifiedModuleType, SpecifiedModuleTypeVc,
+    EcmascriptInputTransformsVc, EcmascriptModuleAssetVc, SpecifiedModuleType,
+    SpecifiedModuleTypeVc,
 };
 
 #[turbo_tasks::value(shared)]
@@ -322,14 +323,19 @@ where
 
 #[turbo_tasks::function]
 pub(crate) async fn analyze_ecmascript_module(
-    source: SourceVc,
-    origin: ResolveOriginVc,
-    ty: Value<EcmascriptModuleAssetType>,
-    transforms: EcmascriptInputTransformsVc,
-    options: Value<EcmascriptOptions>,
-    compile_time_info: CompileTimeInfoVc,
+    module: EcmascriptModuleAssetVc,
     part: Option<ModulePartVc>,
 ) -> Result<AnalyzeEcmascriptModuleResultVc> {
+    let raw_module = module.await?;
+
+    let source = raw_module.source;
+    let ty = Value::new(raw_module.ty);
+    let transforms = raw_module.transforms;
+    let options = raw_module.options;
+    let compile_time_info = raw_module.compile_time_info;
+
+    let origin = module.as_resolve_origin();
+
     let mut analysis = AnalyzeEcmascriptModuleResultBuilder::new();
     let path = origin.origin_path();
 
@@ -583,6 +589,7 @@ pub(crate) async fn analyze_ecmascript_module(
         }
 
         let async_module = AsyncModule {
+            module,
             references: import_references.iter().copied().collect(),
             has_top_level_await,
         }
@@ -596,17 +603,18 @@ pub(crate) async fn analyze_ecmascript_module(
         .cell();
 
         analysis.add_code_gen(esm_exports);
-        analysis.add_code_gen(async_module);
+        analysis.add_code_gen_with_availability_info(async_module);
 
         EcmascriptExports::EsmExports(esm_exports)
     } else if matches!(specified_type, SpecifiedModuleType::EcmaScript) {
         let async_module = AsyncModule {
+            module,
             references: import_references.iter().copied().collect(),
             has_top_level_await,
         }
         .cell();
         analysis.set_async_module(async_module);
-        analysis.add_code_gen(async_module);
+        analysis.add_code_gen_with_availability_info(async_module);
 
         match detect_dynamic_export(program) {
             DetectedDynamicExportType::CommonJs => {
@@ -644,12 +652,13 @@ pub(crate) async fn analyze_ecmascript_module(
             DetectedDynamicExportType::Value => EcmascriptExports::Value,
             DetectedDynamicExportType::UsingModuleDeclarations => {
                 let async_module = AsyncModule {
+                    module,
                     references: import_references.iter().copied().collect(),
                     has_top_level_await,
                 }
                 .cell();
                 analysis.set_async_module(async_module);
-                analysis.add_code_gen(async_module);
+                analysis.add_code_gen_with_availability_info(async_module);
 
                 EcmascriptExports::EsmExports(
                     EsmExports {

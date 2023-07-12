@@ -11,7 +11,7 @@ use std::{
 use anyhow::{bail, Context, Result};
 use dunce::canonicalize;
 use serde::Deserialize;
-use turbo_tasks::{debug::ValueDebug, NothingVc, TryJoinIterExt, TurboTasks, Value, ValueToString};
+use turbo_tasks::{NothingVc, TurboTasks, Value, ValueToString};
 use turbo_tasks_env::DotenvProcessEnvVc;
 use turbo_tasks_fs::{
     json::parse_json_with_source_context, util::sys_to_unix, DiskFileSystemVc, FileSystem,
@@ -151,14 +151,7 @@ async fn run(resource: PathBuf) -> Result<()> {
 
         let plain_issues = captured_issues
             .iter_with_shortest_path()
-            .map(|(issue_vc, path)| async move {
-                Ok((
-                    issue_vc.into_plain(path).await?,
-                    issue_vc.into_plain(path).dbg().await?,
-                ))
-            })
-            .try_join()
-            .await?;
+            .map(|(issue_vc, path)| issue_vc.into_plain(path));
 
         snapshot_issues(plain_issues, out.join("issues"), &REPO_ROOT)
             .await
