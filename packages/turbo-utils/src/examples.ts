@@ -45,7 +45,14 @@ export async function getRepoInfo(
   ) {
     try {
       const infoResponse = await got(
-        `https://api.github.com/repos/${username}/${name}`
+        `https://api.github.com/repos/${username}/${name}`,
+        {
+          headers: !process.env.GITHUB_TOKEN
+            ? undefined
+            : {
+                Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+              },
+        }
       );
       const info = JSON.parse(infoResponse.body);
       return { username, name, branch: info["default_branch"], filePath };

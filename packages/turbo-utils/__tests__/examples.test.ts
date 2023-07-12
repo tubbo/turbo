@@ -51,6 +51,18 @@ describe("examples", () => {
         },
       },
       {
+        repoUrl: "https://github.com/vercel/infrastructure/",
+        examplePath: undefined,
+        defaultBranch: "main",
+        expectBranchLookup: true,
+        expected: {
+          username: "vercel",
+          name: "infrastructure",
+          branch: "main",
+          filePath: "",
+        },
+      },
+      {
         repoUrl:
           "https://github.com/vercel/turbo/tree/canary/examples/kitchen-sink",
         examplePath: undefined,
